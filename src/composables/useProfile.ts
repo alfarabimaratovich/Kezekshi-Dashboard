@@ -3,6 +3,7 @@ import { useRoute } from 'vue-router'
 import { getUserData, getRegions, getSchools, setPlannedBudget, getPlannedBudgets, changeUserData, downloadUserPhoto } from '@/lib/api'
 import { useAuth } from '@/stores/useAuth'
 import { notify } from '@/lib'
+import { getWorkingDaysInMonth } from '@/lib/utils'
 
 export function useProfile() {
   const route = useRoute()
@@ -180,7 +181,9 @@ export function useProfile() {
 
     isSavingBudget.value = true
     try {
-      const calculatedAmount = Number(budgetForm.value.studentCount) * Number(budgetForm.value.price)
+      const workingDays = getWorkingDaysInMonth(Number(budgetForm.value.year), Number(budgetForm.value.month))
+      const calculatedAmount = Number(budgetForm.value.studentCount) * Number(budgetForm.value.price) * workingDays
+      
       await setPlannedBudget({
         year: Number(budgetForm.value.year),
         month: Number(budgetForm.value.month),

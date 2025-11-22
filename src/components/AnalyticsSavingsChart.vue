@@ -62,8 +62,12 @@ const chartData = computed(() => {
   // Fill with API data
   apiData.value.forEach(item => {
     if (item.month >= 1 && item.month <= 12) {
-      months[item.month - 1].savings = item.saved_expense || 0
-      months[item.month - 1].expenses = item.actual_expense || 0
+      // Ensure values are numbers and not negative
+      const savings = Math.max(0, Number(item.saved_expense) || 0)
+      const expenses = Math.max(0, Number(item.actual_expense) || 0)
+      
+      months[item.month - 1].savings = savings
+      months[item.month - 1].expenses = expenses
     }
   })
 

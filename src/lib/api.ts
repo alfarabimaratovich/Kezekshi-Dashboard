@@ -509,6 +509,68 @@ export async function getMonthlySavings(
   regionId?: string | number,
   schoolId?: string | number
 ) {
+  // MOCK IMPLEMENTATION
+  await new Promise(resolve => setTimeout(resolve, 50));
+  
+  const key = 'mock_budget_history';
+  const history = JSON.parse(localStorage.getItem(key) || '[]');
+  
+  // Filter by year, region, and school
+  const yearHistory = history.filter((h: any) => {
+      const yearMatch = String(h.year) === String(year);
+      
+      let regionMatch = true;
+      if (regionId && String(regionId) !== 'all') {
+          regionMatch = String(h.region_id) === String(regionId);
+      }
+      
+      let schoolMatch = true;
+      if (schoolId && String(schoolId) !== 'all') {
+          schoolMatch = String(h.school_id) === String(schoolId);
+      }
+      
+      return yearMatch && regionMatch && schoolMatch;
+  });
+  
+  // Refined logic: Get unique months with latest plan
+  const uniqueMonths = new Map<number, any>();
+  yearHistory.forEach((h: any) => {
+      if (!uniqueMonths.has(h.month)) {
+          uniqueMonths.set(h.month, h);
+      }
+      // Since we unshift in setPlannedBudget, the first one we see is the latest.
+      // So we don't update if it exists.
+  });
+
+  const result = [];
+  for (const [month, plan] of uniqueMonths.entries()) {
+      let actual = 0;
+      try {
+          const lastDay = new Date(Number(year), month, 0).getDate();
+          const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+          const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+          
+          const stats = await getSummaryStats(startDate, endDate, regionId, schoolId);
+          if (stats) {
+              // Calculate actual expense based on the PLANNED PRICE and ACTUAL MEAL COUNT
+              // This ensures the savings are calculated correctly according to the user's input
+              const mealsCount = stats.students_with_meals_total || 0;
+              actual = mealsCount * Number(plan.price);
+          }
+      } catch (e) {
+          console.warn(`Failed to fetch actual stats for ${year}-${month}`, e);
+      }
+
+      result.push({
+          month: month,
+          saved_expense: Number(plan.amount) - actual,
+          actual_expense: actual
+      });
+  }
+  
+  return result;
+
+  /*
   const params = new URLSearchParams();
   params.append('year', String(year));
   
@@ -540,6 +602,7 @@ export async function getMonthlySavings(
   }
 
   return data;
+  */
 }
 
 export async function changeUserData(token: string, payload: {
@@ -576,7 +639,7 @@ export async function setPlannedBudget(payload: {
   
   // MOCK IMPLEMENTATION using localStorage
   // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise(resolve => setTimeout(resolve, 50));
 
   const key = 'mock_budget_history';
   const history = JSON.parse(localStorage.getItem(key) || '[]');
@@ -617,7 +680,7 @@ export async function setPlannedBudget(payload: {
 
 export async function getPlannedBudgets() {
   // MOCK IMPLEMENTATION using localStorage
-  await new Promise(resolve => setTimeout(resolve, 300));
+  await new Promise(resolve => setTimeout(resolve, 50));
   
   const key = 'mock_budget_history';
   return JSON.parse(localStorage.getItem(key) || '[]');
@@ -858,5 +921,31 @@ export async function downloadUserPhoto(token: string) {
     // If it's not JSON, return as text (likely base64 string)
     return text;
   }
+}
+
+export function getLocalPlannedBudget(
+  year: number, 
+  month: number, 
+  regionId?: string | number, 
+  schoolId?: string | number
+) {
+  const key = 'mock_budget_history';
+  const history = JSON.parse(localStorage.getItem(key) || '[]');
+  return history.find((h: any) => {
+      const yearMatch = Number(h.year) === year;
+      const monthMatch = Number(h.month) === month;
+      
+      let regionMatch = true;
+      if (regionId && String(regionId) !== 'all') {
+          regionMatch = String(h.region_id) === String(regionId);
+      }
+      
+      let schoolMatch = true;
+      if (schoolId && String(schoolId) !== 'all') {
+          schoolMatch = String(h.school_id) === String(schoolId);
+      }
+      
+      return yearMatch && monthMatch && regionMatch && schoolMatch;
+  });
 }
 

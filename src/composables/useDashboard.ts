@@ -1,7 +1,8 @@
 import { ref, onMounted, watch, type Ref } from 'vue'
-import { getRegions, getSchools, getStudentsStats, getPassageStats, getDinnerStats, getLibraryStats, getSummaryStats } from '@/lib/api'
+import { getRegions, getSchools, getPassageStats, getDinnerStats, getLibraryStats, getSummaryStats, getLocalPlannedBudget } from '@/lib/api'
 import { getLocalTimeZone, today } from '@internationalized/date'
 import type { DateRange } from 'reka-ui'
+import { getWorkingDaysInMonth } from '@/lib/utils'
 
 export function useDashboard() {
   // Global Filters State
@@ -45,7 +46,12 @@ export function useDashboard() {
     const price = Number(manualMealPrice.value)
     
     if (!isNaN(students) && !isNaN(price)) {
-      budgetData.value.planned = students * price
+      // Calculate working days for the current month (based on dateRange or today)
+      const currentMonth = dateRange.value.start ? dateRange.value.start.month : today(getLocalTimeZone()).month
+      const currentYear = dateRange.value.start ? dateRange.value.start.year : today(getLocalTimeZone()).year
+      const workingDays = getWorkingDaysInMonth(currentYear, currentMonth)
+      
+      budgetData.value.planned = students * price * workingDays
     }
     
     if (!isNaN(price)) {
@@ -60,9 +66,25 @@ export function useDashboard() {
       const startDate = dateRange.value.start?.toString() || ''
       const endDate = dateRange.value.end?.toString() || startDate
 
-      // Fetch summary stats for the top cards
-      const summaryStats = await getSummaryStats(startDate, endDate, selectedRegion.value, selectedSchool.value)
-      
+      const now = today(getLocalTimeZone())
+      const startOfMonth = new Date(now.year, now.month - 1, 1).toISOString().split('T')[0]
+      const endOfMonth = new Date(now.year, now.month, 0).toISOString().split('T')[0]
+
+      // Fetch all data in parallel to improve performance
+      const [
+        summaryStats,
+        monthlyStats,
+        passageData,
+        dinnerData,
+        libraryData
+      ] = await Promise.all([
+        getSummaryStats(startDate, endDate, selectedRegion.value, selectedSchool.value),
+        getSummaryStats(startOfMonth, endOfMonth, selectedRegion.value || '', selectedSchool.value || ''),
+        getPassageStats(startDate, endDate, selectedRegion.value, selectedSchool.value),
+        getDinnerStats(startDate, endDate, selectedRegion.value, selectedSchool.value),
+        getLibraryStats(startDate, endDate, selectedRegion.value, selectedSchool.value)
+      ])
+
       if (summaryStats) {
         summaryData.value.totalChildren = summaryStats.total_students || 0
         summaryData.value.visitedToday = summaryStats.students_who_attended_school || 0
@@ -70,27 +92,42 @@ export function useDashboard() {
         summaryData.value.meals1to4 = summaryStats.students_with_meals_1_4 || 0
         summaryData.value.meals5to11 = summaryStats.students_with_meals_5_11 || 0
         
-        budgetData.value.planned = summaryStats.planned_expense || 0
-        budgetData.value.spent = summaryStats.actual_expense || 0
-        
-        if (manualStudentCount.value && manualMealPrice.value) {
-           budgetData.value.planned = Number(manualStudentCount.value) * Number(manualMealPrice.value)
+        // Use monthly stats for budget data
+        if (monthlyStats) {
+            budgetData.value.planned = monthlyStats.planned_expense || 0
+            budgetData.value.spent = monthlyStats.actual_expense || 0
+        } else {
+            budgetData.value.planned = 0
+            budgetData.value.spent = 0
         }
 
-        if (manualMealPrice.value) {
-           budgetData.value.spent = (summaryStats.students_with_meals_total || 0) * Number(manualMealPrice.value)
+        // Override planned budget with local mock if available
+        const localBudget = getLocalPlannedBudget(now.year, now.month, selectedRegion.value, selectedSchool.value)
+        if (localBudget) {
+            budgetData.value.planned = Number(localBudget.amount)
+            
+            // Also recalculate spent based on the planned price and actual meals
+            // This ensures consistency with the Savings Chart logic
+            if (monthlyStats) {
+                const mealsCount = monthlyStats.students_with_meals_total || 0
+                budgetData.value.spent = mealsCount * Number(localBudget.price)
+            }
+            
+            budgetData.value.saved = budgetData.value.planned - budgetData.value.spent
+        }
+        
+        if (manualStudentCount.value && manualMealPrice.value) {
+           const workingDays = getWorkingDaysInMonth(now.year, now.month)
+           budgetData.value.planned = Number(manualStudentCount.value) * Number(manualMealPrice.value) * workingDays
+        }
+
+        if (manualMealPrice.value && monthlyStats) {
+           // If manual price is set, recalculate spent based on monthly meals count
+           budgetData.value.spent = (monthlyStats.students_with_meals_total || 0) * Number(manualMealPrice.value)
         }
 
         budgetData.value.saved = budgetData.value.planned - budgetData.value.spent
       }
-
-      // Fetch detailed stats for charts
-      const [, passageData, dinnerData, libraryData] = await Promise.all([
-        getStudentsStats(selectedRegion.value, selectedSchool.value),
-        getPassageStats(startDate, endDate, selectedRegion.value, selectedSchool.value),
-        getDinnerStats(startDate, endDate, selectedRegion.value, selectedSchool.value),
-        getLibraryStats(startDate, endDate, selectedRegion.value, selectedSchool.value)
-      ])
       
       // Calculate Visited Today (from passageData)
       let visitedToday = 0
