@@ -1,7 +1,7 @@
-import path from 'node:path'
-import { defineConfig } from 'vite'
-import tailwindcss from '@tailwindcss/vite'
-import vue from '@vitejs/plugin-vue'
+import path from "node:path";
+import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
+import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
@@ -10,46 +10,49 @@ export default defineConfig({
     proxy: {
       // Proxy API calls to avoid CORS in development
       // Requests starting with /basic or /user will be forwarded to the real API
-      '/basic': {
-        target: 'https://api.kezekshi.kz:39443',
+      "/basic": {
+        target: "https://api.kezekshi.kz:39443",
         changeOrigin: true,
         secure: false,
       },
-      '/user': {
-        target: 'https://api.kezekshi.kz:39443',
+      "/user": {
+        target: "https://api.kezekshi.kz:39443",
         changeOrigin: true,
         secure: false,
       },
-      '/dashboard': {
-        target: 'https://api.kezekshi.kz:39443',
+      "/dashboard": {
+        target: "https://api.kezekshi.kz:39443",
         changeOrigin: true,
         secure: false,
       },
-      '/events': {
-        target: 'https://api.kezekshi.kz:39443',
+      "/events": {
+        target: "https://api.kezekshi.kz:39443",
         changeOrigin: true,
         secure: false,
       },
     },
+  },
+  build: {
+    outDir: "dist",
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+});
 
 // Example fetch request using the /basic/login endpoint
-fetch('/basic/login', {
-  method: 'POST',
+fetch("/basic/login", {
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    username: 'your_username',
-    password: 'your_password',
+    username: "your_username",
+    password: "your_password",
   }),
 })
-  .then(response => response.json())
-  .then(data => console.log(data))
-  .catch(error => console.error('Error:', error))
+  .then((response) => response.json())
+  .then((data) => console.log(data))
+  .catch((error) => console.error("Error:", error));
