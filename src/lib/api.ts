@@ -5,7 +5,7 @@ import { normalizePhone } from './phone'
 const BASE = '';
 
 // Общий токен для всех запросов (используется для публичных эндпоинтов, где нужен токен приложения)
-const COMMON_TOKEN = import.meta.env.VITE_API_TEST_TOKEN || '3ec66efa6a5ce64787037ee2b4dd994b3fd1405c095355df26803234b49c1aa5'
+const COMMON_TOKEN = import.meta.env.VITE_API_TEST_TOKEN || '4cbbb8be544fc965e07f5f2ac1b07c5df41ef516133f61e1afde0165e1a4ef0f'
 
 export async function getUserData(token: string, changesAfter?: string) {
   // if (import.meta.env.DEV) {
@@ -23,12 +23,15 @@ export async function getUserData(token: string, changesAfter?: string) {
       'Authorization': `Bearer ${token}`
     }
   });
+  
+  const text = await res.text();
   let data;
   try {
-    data = await res.json();
+    data = JSON.parse(text);
   } catch (e) {
-    throw { status: res.status, message: 'Invalid JSON response', raw: await res.text() };
+    throw { status: res.status, message: 'Invalid JSON response', raw: text };
   }
+  
   if (!res.ok) {
     throw { status: res.status, ...data };
   }
@@ -37,9 +40,6 @@ export async function getUserData(token: string, changesAfter?: string) {
 
 export async function sendOtp(phone: string) {
   // Legacy server-side OTP endpoint. Keep as-is for servers that support it.
-  if (import.meta.env.DEV) {
-    return { status: true, message: 'Мок: OTP отправлен' };
-  }
   const res = await fetch(`${BASE}/basic/send-otp`, {
     method: 'POST',
     headers: {
@@ -56,12 +56,6 @@ export async function sendOtp(phone: string) {
 }
 
 export async function verifyOtp(phone: string, code: string) {
-  if (import.meta.env.DEV) {
-    if (code === '0000' || code === '1234') {
-      return { status: true, message: 'Мок: OTP подтвержден' };
-    }
-    throw { status: 400, detail: 'Мок: Неверный код' };
-  }
   const res = await fetch(`${BASE}/basic/verify-otp`, {
     method: 'POST',
     headers: {
@@ -77,10 +71,10 @@ export async function verifyOtp(phone: string, code: string) {
   return data
 }
 
-export async function resetPassword(phone: string, code: string, newPassword: string) {
-  if (import.meta.env.DEV) {
-    return { status: true, message: 'Мок: Пароль сброшен' };
-  }
+export async function resetPassword(phone: string, newPassword: string) {
+  // if (import.meta.env.DEV) {
+  //   return { status: true, message: 'Мок: Пароль сброшен' };
+  // }
   const res = await fetch(`${BASE}/basic/reset-password`, {
     method: 'POST',
     headers: {
@@ -88,7 +82,7 @@ export async function resetPassword(phone: string, code: string, newPassword: st
       'accept': 'application/json',
       Authorization: `Bearer ${COMMON_TOKEN}`
     },
-    body: JSON.stringify({ phone, code, password: newPassword })
+    body: JSON.stringify({ phone, new_password: newPassword })
   })
   let data
   try { data = await res.json() } catch (e) { data = null }
@@ -233,9 +227,6 @@ export async function searchPhoneNumber(phone: string) {
 }
 
 export async function sendSms(recipient: string, text: string) {
-  if (import.meta.env.DEV) {
-    return { status: true, message: 'Мок: СМС отправлено' };
-  }
   if (text.length < 50) {
     throw new Error("Message text must be at least 50 characters long");
   }
@@ -279,12 +270,15 @@ export async function getRegions() {
       'Authorization': `Bearer ${COMMON_TOKEN}`
     }
   });
+  
+  const text = await res.text();
   let data;
   try {
-    data = await res.json();
+    data = JSON.parse(text);
   } catch (e) {
-    throw { status: res.status, message: 'Invalid JSON response', raw: await res.text() };
+    throw { status: res.status, message: 'Invalid JSON response', raw: text };
   }
+  
   if (!res.ok) {
     throw { status: res.status, ...data };
   }
@@ -299,12 +293,15 @@ export async function getSchools(regionId: string | number) {
       'Authorization': `Bearer ${COMMON_TOKEN}`
     }
   });
+  
+  const text = await res.text();
   let data;
   try {
-    data = await res.json();
+    data = JSON.parse(text);
   } catch (e) {
-    throw { status: res.status, message: 'Invalid JSON response', raw: await res.text() };
+    throw { status: res.status, message: 'Invalid JSON response', raw: text };
   }
+  
   if (!res.ok) {
     throw { status: res.status, ...data };
   }
@@ -328,7 +325,8 @@ export async function getStudentsStats(regionId?: string | number, schoolId?: st
 
   const res = await fetch(`${BASE}/dashboard/students-stats?${params.toString()}`, {
     method: 'GET',
-    headers: {
+    headers:
+     {
       'accept': 'application/json',
       'Authorization': `Bearer ${COMMON_TOKEN}`
     }
@@ -499,30 +497,6 @@ export async function getSummaryStats(
     throw { status: res.status, message: 'Invalid JSON response', raw: text };
   }
 
-  // --- MOCK INJECTION FOR DEMO ---
-  // Inject planned budget from localStorage if available for the start date's month
-  try {
-    const start = new Date(startDate);
-    const year = start.getFullYear();
-    const month = start.getMonth() + 1;
-    const storageKey = 'kezekshi_budget_plans';
-    const plans = JSON.parse(localStorage.getItem(storageKey) || '{}');
-    const schoolKey = schoolId ? String(schoolId) : 'all';
-    
-    if (plans[year] && plans[year][schoolKey] && plans[year][schoolKey][month]) {
-      const plan = plans[year][schoolKey][month];
-      data.planned_expense = plan.amount;
-      
-      // Also calculate mock actual expense based on the price set in profile
-      if (plan.price && data.students_with_meals_total) {
-        data.actual_expense = data.students_with_meals_total * plan.price;
-      }
-    }
-  } catch (e) {
-    console.warn('Failed to inject mock budget data', e);
-  }
-  // -------------------------------
-
   if (!res.ok) {
     throw { status: res.status, ...data };
   }
@@ -535,40 +509,6 @@ export async function getMonthlySavings(
   regionId?: string | number,
   schoolId?: string | number
 ) {
-  // For presentation: Try to get data from LocalStorage first
-  const storageKey = 'kezekshi_budget_plans';
-  const plans = JSON.parse(localStorage.getItem(storageKey) || '{}');
-  const schoolKey = schoolId ? String(schoolId) : 'all';
-  const yearKey = String(year);
-
-  // If we have local plans for this year/school, use them to generate the chart
-  if (plans[yearKey] && plans[yearKey][schoolKey]) {
-    const yearPlans = plans[yearKey][schoolKey];
-    const result = [];
-    
-    for (let i = 1; i <= 12; i++) {
-      const plan = yearPlans[i] || { amount: 0, price: 0 };
-      const planned = plan.amount;
-      const price = plan.price || 0;
-      
-      // Mock actual meals count (random between 2000 and 3000 for demo purposes)
-      // In a real app, this would come from historical stats
-      const mockMealsCount = price > 0 ? Math.floor(Math.random() * (3000 - 2000 + 1)) + 2000 : 0;
-      
-      const actual = mockMealsCount * price;
-      const saved = planned - actual;
-      
-      result.push({
-        month: i,
-        saved_expense: saved,
-        actual_expense: actual,
-        planned_expense: planned
-      });
-    }
-    return result;
-  }
-
-  // Fallback to API if no local data
   const params = new URLSearchParams();
   params.append('year', String(year));
   
@@ -602,6 +542,27 @@ export async function getMonthlySavings(
   return data;
 }
 
+export async function changeUserData(token: string, payload: {
+  phone: string,
+  new_fullname: string,
+  new_iin: string,
+  device_token: string
+}) {
+  const res = await fetch(`${BASE}/user/change-user-data`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'accept': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  })
+  let data
+  try { data = await res.json() } catch (e) { data = null }
+  if (!res.ok) throw { status: res.status, ...data }
+  return data
+}
+
 export async function setPlannedBudget(payload: {
   year: number,
   month: number,
@@ -609,60 +570,293 @@ export async function setPlannedBudget(payload: {
   price: number,
   region_id?: number,
   school_id?: number,
-  school_name?: string // Added for history display
+  school_name?: string
 }) {
-  console.log('[API] Setting planned budget:', payload);
+  console.log('[API] Setting planned budget (MOCK):', payload);
   
-  // Save to localStorage for presentation
-  const storageKey = 'kezekshi_budget_plans';
-  let plans = JSON.parse(localStorage.getItem(storageKey) || '{}');
-  
-  const yearKey = String(payload.year);
-  const schoolKey = payload.school_id ? String(payload.school_id) : 'all';
-  
-  if (!plans[yearKey]) plans[yearKey] = {};
-  if (!plans[yearKey][schoolKey]) plans[yearKey][schoolKey] = {};
-  
-  plans[yearKey][schoolKey][payload.month] = {
-    amount: payload.amount,
-    price: payload.price,
-    region_id: payload.region_id,
-    school_id: payload.school_id,
-    school_name: payload.school_name, // Save name
-    timestamp: new Date().toISOString()
-  };
-  
-  localStorage.setItem(storageKey, JSON.stringify(plans));
+  // MOCK IMPLEMENTATION using localStorage
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 500));
 
-  return { status: true, message: 'Бюджет успешно сохранен (Local)' };
+  const key = 'mock_budget_history';
+  const history = JSON.parse(localStorage.getItem(key) || '[]');
+  
+  // Add timestamp or ID if needed, but payload is enough for now
+  history.unshift({ ...payload, created_at: new Date().toISOString() });
+  
+  localStorage.setItem(key, JSON.stringify(history));
+  
+  return { status: true, message: 'Бюджет успешно сохранен (локально)' };
+
+  /* 
+  // Real API implementation (commented out until backend is ready)
+  const res = await fetch(`${BASE}/dashboard/set-planned-budget`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'accept': 'application/json',
+      'Authorization': `Bearer ${COMMON_TOKEN}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  let data;
+  try {
+    data = await res.json();
+  } catch (e) {
+    throw { status: res.status, message: 'Invalid JSON response', raw: await res.text() };
+  }
+
+  if (!res.ok) {
+    throw { status: res.status, ...data };
+  }
+
+  return data;
+  */
 }
 
 export async function getPlannedBudgets() {
-  const storageKey = 'kezekshi_budget_plans';
-  const plans = JSON.parse(localStorage.getItem(storageKey) || '{}');
-  const result: any[] = [];
+  // MOCK IMPLEMENTATION using localStorage
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const key = 'mock_budget_history';
+  return JSON.parse(localStorage.getItem(key) || '[]');
 
-  // Iterate over years
-  Object.keys(plans).forEach(year => {
-    // Iterate over schools
-    Object.keys(plans[year]).forEach(schoolId => {
-      // Iterate over months
-      Object.keys(plans[year][schoolId]).forEach(month => {
-        const plan = plans[year][schoolId][month];
-        result.push({
-          year: parseInt(year),
-          month: parseInt(month),
-          school_id: schoolId === 'all' ? null : parseInt(schoolId),
-          ...plan
-        });
-      });
-    });
+  /*
+  // Real API implementation (commented out until backend is ready)
+  const res = await fetch(`${BASE}/dashboard/planned-budgets`, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+      'Authorization': `Bearer ${COMMON_TOKEN}`
+    }
   });
 
-  // Sort by date desc
-  return result.sort((a, b) => {
-    if (a.year !== b.year) return b.year - a.year;
-    return b.month - a.month;
+  let data;
+  try {
+    data = await res.json();
+  } catch (e) {
+    throw { status: res.status, message: 'Invalid JSON response', raw: await res.text() };
+  }
+
+  if (!res.ok) {
+    throw { status: res.status, ...data };
+  }
+
+  return data;
+  */
+}
+
+export async function getParentData(token: string) {
+  const res = await fetch(`${BASE}/user/parent-data`, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
   });
+  
+  const text = await res.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    throw { status: res.status, message: 'Invalid JSON response', raw: text };
+  }
+  
+  if (!res.ok) {
+    throw { status: res.status, ...data };
+  }
+  return data;
+}
+
+export async function getPupils(token: string) {
+  const res = await fetch(`${BASE}/user/pupils`, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  const text = await res.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    throw { status: res.status, message: 'Invalid JSON response', raw: text };
+  }
+  
+  if (!res.ok) {
+    throw { status: res.status, ...data };
+  }
+  return data;
+}
+
+export async function getPupilEvents(
+  token: string,
+  startTime: string,
+  endTime: string,
+  eventClasses: string[] = [],
+  pupilIin?: string,
+  additionData: boolean = false
+) {
+  const params = new URLSearchParams();
+  params.append('start_time', startTime);
+  params.append('end_time', endTime);
+  eventClasses.forEach(cls => params.append('event_classes', cls));
+  if (pupilIin) params.append('pupil_iin', pupilIin);
+  if (additionData) params.append('addition_data', 'true');
+
+  const res = await fetch(`${BASE}/events/pupil-events?${params.toString()}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'accept': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: ''
+  });
+  
+  const text = await res.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    throw { status: res.status, message: 'Invalid JSON response', raw: text };
+  }
+  
+  if (!res.ok) {
+    console.error('[API Error] getPupilEvents:', data);
+    throw { status: res.status, ...data };
+  }
+  return data;
+}
+
+export async function getPupilStatuses(
+  token: string,
+  eventClasses: string[] = [],
+  pupilIin?: string
+) {
+  const params = new URLSearchParams();
+  eventClasses.forEach(cls => params.append('event_classes', cls));
+
+  const body: any = {};
+  if (pupilIin) body.pupil_iin = pupilIin;
+
+  const res = await fetch(`${BASE}/events/pupil-statuses?${params.toString()}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'accept': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(body)
+  });
+  
+  const text = await res.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    throw { status: res.status, message: 'Invalid JSON response', raw: text };
+  }
+  
+  if (!res.ok) {
+    console.error('[API Error] getPupilStatuses:', data);
+    throw { status: res.status, ...data };
+  }
+  return data;
+}
+
+export async function downloadStudentPhoto(token: string, iin: string) {
+  const res = await fetch(`${BASE}/user/download-student-photo/${iin}`, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json, text/plain, */*',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (res.status === 404) {
+    return null;
+  }
+
+  const contentType = res.headers.get('content-type');
+
+  if (res.ok && contentType && contentType.includes('image')) {
+     const blob = await res.blob();
+     return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+     });
+  }
+  
+  const text = await res.text();
+  
+  if (!res.ok) {
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = { raw: text };
+    }
+    throw { status: res.status, ...data };
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    // If it's not JSON, return as text (likely base64 string)
+    return text;
+  }
+}
+
+export async function downloadUserPhoto(token: string) {
+  const res = await fetch(`${BASE}/user/download-user-photo`, {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json, text/plain, */*',
+      'Authorization': `Bearer ${token}`
+    },
+    body: ''
+  });
+
+  if (res.status === 404) {
+    return null;
+  }
+
+  const contentType = res.headers.get('content-type');
+
+  if (res.ok && contentType && contentType.includes('image')) {
+     const blob = await res.blob();
+     return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+     });
+  }
+  
+  const text = await res.text();
+  
+  if (!res.ok) {
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = { raw: text };
+    }
+    throw { status: res.status, ...data };
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    // If it's not JSON, return as text (likely base64 string)
+    return text;
+  }
 }
 

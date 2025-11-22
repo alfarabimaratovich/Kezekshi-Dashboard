@@ -25,6 +25,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/events': {
+        target: 'https://api.kezekshi.kz:39443',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   resolve: {

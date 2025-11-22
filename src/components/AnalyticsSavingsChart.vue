@@ -105,7 +105,7 @@ const crosshairTemplate = componentToString(chartConfig, ChartTooltipContent, {
 </script>
 
 <template>
-  <Card class="py-4 sm:py-0">
+  <Card class="py-4 sm:py-0 shadow-lg shadow-green-500/20">
     <CardHeader class="flex flex-col items-stretch border-b p-0 sm:flex-row">
       <div class="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
         <div class="flex items-center justify-between">

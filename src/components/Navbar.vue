@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ButtonGroup } from '@/components/ui/button-group'
 import Button from '@/components/ui/button/Button.vue'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LogOut, Menu, X, Moon, Sun, User, Wallet } from 'lucide-vue-next'
 import { useDark, useToggle } from '@vueuse/core'
 
@@ -29,7 +30,16 @@ const toggleDark = useToggle(isDark)
 const isMenuOpen = ref(false)
 // use centralized auth store
 import { useAuth } from '@/stores/useAuth'
-const { isAuth, logout: authLogout } = useAuth()
+const { isAuth, logout: authLogout, userPhotoUrl, fetchProfile, userProfile } = useAuth()
+
+onMounted(() => {
+  if (isAuth.value) {
+    // Always try to fetch profile/photo if missing
+    if (!userProfile.value || !userPhotoUrl.value) {
+        fetchProfile()
+    }
+  }
+})
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -70,22 +80,22 @@ const logout = () => {
               <NavigationMenuItem>
                 <NavigationMenuLink as-child>
                   <a 
-                    href="/analytics" 
+                    href="/stats" 
                     class="px-3 py-2 rounded-md transition-colors duration-200 font-medium"
-                    :class="activePath === '/analytics' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
+                    :class="activePath === '/stats' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
                   >
-                    Аналитика
+                    Статистика
                   </a>
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink as-child>
                   <a 
-                    href="/stats" 
+                    href="/my-children" 
                     class="px-3 py-2 rounded-md transition-colors duration-200 font-medium"
-                    :class="activePath === '/stats' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
+                    :class="activePath === '/my-children' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
                   >
-                    Статистика
+                    Мои дети
                   </a>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -119,9 +129,12 @@ const logout = () => {
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" class="relative h-10 w-10 rounded-full p-0">
-                <div class="h-10 w-10 rounded-full bg-muted flex items-center justify-center border border-border">
-                  <User class="h-6 w-6 text-muted-foreground" />
-                </div>
+                <Avatar class="h-10 w-10 border border-border">
+                  <AvatarImage v-if="userPhotoUrl" :src="userPhotoUrl" alt="User" class="object-cover" />
+                  <AvatarFallback class="bg-muted flex items-center justify-center">
+                    <User class="h-6 w-6 text-muted-foreground" />
+                  </AvatarFallback>
+                </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -169,18 +182,18 @@ const logout = () => {
             Главная
           </a>
           <a 
-            href="/analytics" 
-            class="px-4 py-2 rounded-lg transition-colors font-medium"
-            :class="activePath === '/analytics' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent'"
-          >
-            Аналитика
-          </a>
-          <a 
             href="/stats" 
             class="px-4 py-2 rounded-lg transition-colors font-medium"
             :class="activePath === '/stats' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent'"
           >
             Статистика
+          </a>
+          <a 
+            href="/my-children" 
+            class="px-4 py-2 rounded-lg transition-colors font-medium"
+            :class="activePath === '/my-children' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent'"
+          >
+            Мои дети
           </a>
         </div>
       </div>

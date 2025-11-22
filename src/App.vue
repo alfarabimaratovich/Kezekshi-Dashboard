@@ -14,10 +14,10 @@ const showNavbar = computed(() => routerReady.value && !((route.meta as any)?.hi
 
 <template>
   <Navbar v-if="showNavbar" />
-  <main class="grid grid-cols-1 grid-rows-1 flex-1 w-full">
+  <main class="grid grid-cols-1 grid-rows-1 flex-1 w-full bg-background">
     <router-view v-slot="{ Component }">
       <transition name="page">
-        <component :is="Component" class="col-start-1 row-start-1 w-full bg-background" />
+        <component :is="Component" class="col-start-1 row-start-1 bg-background" />
       </transition>
     </router-view>
   </main>

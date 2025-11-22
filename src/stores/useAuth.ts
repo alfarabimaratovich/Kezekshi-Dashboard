@@ -1,11 +1,12 @@
 import { ref, watch } from 'vue'
-import { getUserData, login as apiLogin } from '@/lib/api'
+import { getUserData, login as apiLogin, downloadUserPhoto } from '@/lib/api'
 import { notify } from '@/lib'
 
 const AUTH_KEY = 'authToken'
 const isAuth = ref<boolean>(!!localStorage.getItem(AUTH_KEY))
 const authToken = ref<string | null>(localStorage.getItem(AUTH_KEY))
 const userProfile = ref<any>(null)
+const userPhotoUrl = ref<string | null>(null)
 
 export function useAuth() {
   // Login: call API, store token, fetch profile
@@ -34,13 +35,43 @@ export function useAuth() {
   const fetchProfile = async () => {
     if (!authToken.value) {
       userProfile.value = null
+      userPhotoUrl.value = null
       return
     }
     try {
       const profile = await getUserData(authToken.value)
       userProfile.value = profile
+      
+      // Fetch photo
+      try {
+        const photoData = await downloadUserPhoto(authToken.value)
+        
+        if (photoData) {
+            let url = ''
+            if (typeof photoData === 'string') {
+                url = photoData
+            } else if (typeof photoData === 'object' && photoData !== null) {
+                    if ('photo' in photoData) url = photoData.photo
+                    else if ('image' in photoData) url = photoData.image
+                    else if ('data' in photoData) url = photoData.data
+                    else if ('url' in photoData) url = photoData.url
+            }
+
+            if (url) {
+                url = url.trim().replace(/^"|"$/g, '')
+                if (!url.startsWith('http') && !url.startsWith('data:')) {
+                    url = `data:image/jpeg;base64,${url}`
+                }
+                userPhotoUrl.value = url
+            }
+        }
+      } catch (e) {
+        console.warn('Failed to load user photo', e)
+      }
+
     } catch (e: any) {
       userProfile.value = null
+      userPhotoUrl.value = null
       if (e?.detail === 'Not authenticated') {
         notify('Сессия истекла', 'Пожалуйста, войдите снова.', 'warning')
         logout()
@@ -56,6 +87,7 @@ export function useAuth() {
     authToken.value = null
     isAuth.value = false
     userProfile.value = null
+    userPhotoUrl.value = null
     notify('Выход из системы', 'Вы успешно вышли из системы.', 'info')
   }
 
@@ -86,6 +118,7 @@ export function useAuth() {
     isAuth,
     authToken,
     userProfile,
+    userPhotoUrl,
     login,
     logout,
     fetchProfile,

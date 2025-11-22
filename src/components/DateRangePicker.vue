@@ -36,7 +36,7 @@ const value = defineModel<DateRange>({
           id="date"
           variant="outline"
           :class="cn(
-            'w-[260px] justify-start text-left font-normal',
+            'w-full justify-start text-left font-normal',
             !value && 'text-muted-foreground',
           )"
         >
