@@ -2,7 +2,7 @@
 import { clearOtp, verifyOtp as clientVerifyOtp, generateOtp, getRemainingTTL } from './otp';
 import { normalizePhone } from './phone';
 
-const BASE = '';
+const BASE = 'https://api.kezekshi.kz:39443';
 
 // Общий токен для всех запросов (используется для публичных эндпоинтов, где нужен токен приложения)
 const COMMON_TOKEN = import.meta.env.VITE_API_TEST_TOKEN || 'c13aab693becfbc292d4fc4a7c1fc8cf967d7877d45c8eb1b11a999a8089e8d1'
