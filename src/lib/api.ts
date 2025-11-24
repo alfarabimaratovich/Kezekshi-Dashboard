@@ -1,11 +1,11 @@
 // Kezekshi API client
-import { generateOtp, verifyOtp as clientVerifyOtp, clearOtp, getRemainingTTL } from './otp'
-import { normalizePhone } from './phone'
+import { clearOtp, verifyOtp as clientVerifyOtp, generateOtp, getRemainingTTL } from './otp';
+import { normalizePhone } from './phone';
 
 const BASE = '';
 
 // Общий токен для всех запросов (используется для публичных эндпоинтов, где нужен токен приложения)
-const COMMON_TOKEN = import.meta.env.VITE_API_TEST_TOKEN || '4cbbb8be544fc965e07f5f2ac1b07c5df41ef516133f61e1afde0165e1a4ef0f'
+const COMMON_TOKEN = import.meta.env.VITE_API_TEST_TOKEN || 'c13aab693becfbc292d4fc4a7c1fc8cf967d7877d45c8eb1b11a999a8089e8d1'
 
 export async function getUserData(token: string, changesAfter?: string) {
   // if (import.meta.env.DEV) {
@@ -18,12 +18,12 @@ export async function getUserData(token: string, changesAfter?: string) {
   const res = await fetch(url, {
     method: 'GET',
     headers:
-     {
+    {
       'accept': 'application/json',
       'Authorization': `Bearer ${token}`
     }
   });
-  
+
   const text = await res.text();
   let data;
   try {
@@ -31,7 +31,7 @@ export async function getUserData(token: string, changesAfter?: string) {
   } catch (e) {
     throw { status: res.status, message: 'Invalid JSON response', raw: text };
   }
-  
+
   if (!res.ok) {
     throw { status: res.status, ...data };
   }
@@ -97,7 +97,7 @@ export async function sendClientOtp(phone: string, opts?: { length?: number, ttl
   const length = opts?.length || 4
   const ttl = opts?.ttlMs
   const code = generateOtp(phone, length, ttl)
-  
+
   console.log('[DEBUG] Generated OTP:', code, 'for phone:', phone);
 
   // Use the specific verification endpoint
@@ -120,7 +120,7 @@ export async function sendVerifySms(recipient: string, verifyCode: string, langC
   // if (import.meta.env.DEV) {
   //   return { status: true, message: 'Мок: СМС с кодом отправлено' };
   // }
-  
+
   const normalizedPhone = normalizePhone(recipient);
   const params = new URLSearchParams({
     recipient: normalizedPhone,
@@ -174,7 +174,7 @@ export async function login(phone: string, password: string, deviceToken: string
   // if (import.meta.env.DEV) {
   //   return { status: true, token: 'mock-token', user: { phone, name: 'Моковый пользователь' } };
   // }
-  
+
   const normalizedPhone = normalizePhone(phone);
 
   const res = await fetch(`${BASE}/basic/login`, {
@@ -202,7 +202,7 @@ export async function searchPhoneNumber(phone: string) {
   // if (import.meta.env.DEV) {
   //   return { userIsRegistered: true, foundIn: { on_kztk: true, on_trtk: false } };
   // }
-  
+
   const normalizedPhone = normalizePhone(phone);
 
   const res = await fetch(`${BASE}/basic/search-phone-number`, {
@@ -270,7 +270,7 @@ export async function getRegions() {
       'Authorization': `Bearer ${COMMON_TOKEN}`
     }
   });
-  
+
   const text = await res.text();
   let data;
   try {
@@ -278,7 +278,7 @@ export async function getRegions() {
   } catch (e) {
     throw { status: res.status, message: 'Invalid JSON response', raw: text };
   }
-  
+
   if (!res.ok) {
     throw { status: res.status, ...data };
   }
@@ -293,7 +293,7 @@ export async function getSchools(regionId: string | number) {
       'Authorization': `Bearer ${COMMON_TOKEN}`
     }
   });
-  
+
   const text = await res.text();
   let data;
   try {
@@ -301,11 +301,11 @@ export async function getSchools(regionId: string | number) {
   } catch (e) {
     throw { status: res.status, message: 'Invalid JSON response', raw: text };
   }
-  
+
   if (!res.ok) {
     throw { status: res.status, ...data };
   }
-  
+
   if (String(regionId) === 'all') {
     return data;
   }
@@ -326,7 +326,7 @@ export async function getStudentsStats(regionId?: string | number, schoolId?: st
   const res = await fetch(`${BASE}/dashboard/students-stats?${params.toString()}`, {
     method: 'GET',
     headers:
-     {
+    {
       'accept': 'application/json',
       'Authorization': `Bearer ${COMMON_TOKEN}`
     }
@@ -348,9 +348,9 @@ export async function getStudentsStats(regionId?: string | number, schoolId?: st
 }
 
 export async function getPassageStats(
-  startDate: string, 
-  endDate: string, 
-  regionId?: string | number, 
+  startDate: string,
+  endDate: string,
+  regionId?: string | number,
   schoolId?: string | number
 ) {
   const params = new URLSearchParams();
@@ -387,9 +387,9 @@ export async function getPassageStats(
 }
 
 export async function getDinnerStats(
-  startDate: string, 
-  endDate: string, 
-  regionId?: string | number, 
+  startDate: string,
+  endDate: string,
+  regionId?: string | number,
   schoolId?: string | number
 ) {
   const params = new URLSearchParams();
@@ -426,9 +426,9 @@ export async function getDinnerStats(
 }
 
 export async function getLibraryStats(
-  startDate: string, 
-  endDate: string, 
-  regionId?: string | number, 
+  startDate: string,
+  endDate: string,
+  regionId?: string | number,
   schoolId?: string | number
 ) {
   const params = new URLSearchParams();
@@ -465,15 +465,15 @@ export async function getLibraryStats(
 }
 
 export async function getSummaryStats(
-  startDate: string, 
-  endDate: string, 
-  regionId?: string | number, 
+  startDate: string,
+  endDate: string,
+  regionId?: string | number,
   schoolId?: string | number
 ) {
   const params = new URLSearchParams();
   params.append('start_date', startDate);
   params.append('end_date', endDate);
-  
+
   if (regionId && String(regionId) !== 'all') {
     params.append('id_region', String(regionId));
   }
@@ -511,63 +511,63 @@ export async function getMonthlySavings(
 ) {
   // MOCK IMPLEMENTATION
   await new Promise(resolve => setTimeout(resolve, 50));
-  
+
   const key = 'mock_budget_history';
   const history = JSON.parse(localStorage.getItem(key) || '[]');
-  
+
   // Filter by year, region, and school
   const yearHistory = history.filter((h: any) => {
-      const yearMatch = String(h.year) === String(year);
-      
-      let regionMatch = true;
-      if (regionId && String(regionId) !== 'all') {
-          regionMatch = String(h.region_id) === String(regionId);
-      }
-      
-      let schoolMatch = true;
-      if (schoolId && String(schoolId) !== 'all') {
-          schoolMatch = String(h.school_id) === String(schoolId);
-      }
-      
-      return yearMatch && regionMatch && schoolMatch;
+    const yearMatch = String(h.year) === String(year);
+
+    let regionMatch = true;
+    if (regionId && String(regionId) !== 'all') {
+      regionMatch = String(h.region_id) === String(regionId);
+    }
+
+    let schoolMatch = true;
+    if (schoolId && String(schoolId) !== 'all') {
+      schoolMatch = String(h.school_id) === String(schoolId);
+    }
+
+    return yearMatch && regionMatch && schoolMatch;
   });
-  
+
   // Refined logic: Get unique months with latest plan
   const uniqueMonths = new Map<number, any>();
   yearHistory.forEach((h: any) => {
-      if (!uniqueMonths.has(h.month)) {
-          uniqueMonths.set(h.month, h);
-      }
-      // Since we unshift in setPlannedBudget, the first one we see is the latest.
-      // So we don't update if it exists.
+    if (!uniqueMonths.has(h.month)) {
+      uniqueMonths.set(h.month, h);
+    }
+    // Since we unshift in setPlannedBudget, the first one we see is the latest.
+    // So we don't update if it exists.
   });
 
   const result = [];
   for (const [month, plan] of uniqueMonths.entries()) {
-      let actual = 0;
-      try {
-          const lastDay = new Date(Number(year), month, 0).getDate();
-          const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-          const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
-          
-          const stats = await getSummaryStats(startDate, endDate, regionId, schoolId);
-          if (stats) {
-              // Calculate actual expense based on the PLANNED PRICE and ACTUAL MEAL COUNT
-              // This ensures the savings are calculated correctly according to the user's input
-              const mealsCount = stats.students_with_meals_total || 0;
-              actual = mealsCount * Number(plan.price);
-          }
-      } catch (e) {
-          console.warn(`Failed to fetch actual stats for ${year}-${month}`, e);
-      }
+    let actual = 0;
+    try {
+      const lastDay = new Date(Number(year), month, 0).getDate();
+      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+      const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
 
-      result.push({
-          month: month,
-          saved_expense: Number(plan.amount) - actual,
-          actual_expense: actual
-      });
+      const stats = await getSummaryStats(startDate, endDate, regionId, schoolId);
+      if (stats) {
+        // Calculate actual expense based on the PLANNED PRICE and ACTUAL MEAL COUNT
+        // This ensures the savings are calculated correctly according to the user's input
+        const mealsCount = stats.students_with_meals_total || 0;
+        actual = mealsCount * Number(plan.price);
+      }
+    } catch (e) {
+      console.warn(`Failed to fetch actual stats for ${year}-${month}`, e);
+    }
+
+    result.push({
+      month: month,
+      saved_expense: Number(plan.amount) - actual,
+      actual_expense: actual
+    });
   }
-  
+
   return result;
 
   /*
@@ -636,19 +636,19 @@ export async function setPlannedBudget(payload: {
   school_name?: string
 }) {
   console.log('[API] Setting planned budget (MOCK):', payload);
-  
+
   // MOCK IMPLEMENTATION using localStorage
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 50));
 
   const key = 'mock_budget_history';
   const history = JSON.parse(localStorage.getItem(key) || '[]');
-  
+
   // Add timestamp or ID if needed, but payload is enough for now
   history.unshift({ ...payload, created_at: new Date().toISOString() });
-  
+
   localStorage.setItem(key, JSON.stringify(history));
-  
+
   return { status: true, message: 'Бюджет успешно сохранен (локально)' };
 
   /* 
@@ -681,7 +681,7 @@ export async function setPlannedBudget(payload: {
 export async function getPlannedBudgets() {
   // MOCK IMPLEMENTATION using localStorage
   await new Promise(resolve => setTimeout(resolve, 50));
-  
+
   const key = 'mock_budget_history';
   return JSON.parse(localStorage.getItem(key) || '[]');
 
@@ -718,7 +718,7 @@ export async function getParentData(token: string) {
       'Authorization': `Bearer ${token}`
     }
   });
-  
+
   const text = await res.text();
   let data;
   try {
@@ -726,7 +726,7 @@ export async function getParentData(token: string) {
   } catch (e) {
     throw { status: res.status, message: 'Invalid JSON response', raw: text };
   }
-  
+
   if (!res.ok) {
     throw { status: res.status, ...data };
   }
@@ -741,7 +741,7 @@ export async function getPupils(token: string) {
       'Authorization': `Bearer ${token}`
     }
   });
-  
+
   const text = await res.text();
   let data;
   try {
@@ -749,7 +749,7 @@ export async function getPupils(token: string) {
   } catch (e) {
     throw { status: res.status, message: 'Invalid JSON response', raw: text };
   }
-  
+
   if (!res.ok) {
     throw { status: res.status, ...data };
   }
@@ -780,7 +780,7 @@ export async function getPupilEvents(
     },
     body: ''
   });
-  
+
   const text = await res.text();
   let data;
   try {
@@ -788,7 +788,7 @@ export async function getPupilEvents(
   } catch (e) {
     throw { status: res.status, message: 'Invalid JSON response', raw: text };
   }
-  
+
   if (!res.ok) {
     console.error('[API Error] getPupilEvents:', data);
     throw { status: res.status, ...data };
@@ -816,7 +816,7 @@ export async function getPupilStatuses(
     },
     body: JSON.stringify(body)
   });
-  
+
   const text = await res.text();
   let data;
   try {
@@ -824,7 +824,7 @@ export async function getPupilStatuses(
   } catch (e) {
     throw { status: res.status, message: 'Invalid JSON response', raw: text };
   }
-  
+
   if (!res.ok) {
     console.error('[API Error] getPupilStatuses:', data);
     throw { status: res.status, ...data };
@@ -848,17 +848,17 @@ export async function downloadStudentPhoto(token: string, iin: string) {
   const contentType = res.headers.get('content-type');
 
   if (res.ok && contentType && contentType.includes('image')) {
-     const blob = await res.blob();
-     return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-     });
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
-  
+
   const text = await res.text();
-  
+
   if (!res.ok) {
     let data;
     try {
@@ -894,17 +894,17 @@ export async function downloadUserPhoto(token: string) {
   const contentType = res.headers.get('content-type');
 
   if (res.ok && contentType && contentType.includes('image')) {
-     const blob = await res.blob();
-     return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-     });
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
-  
+
   const text = await res.text();
-  
+
   if (!res.ok) {
     let data;
     try {
@@ -924,28 +924,28 @@ export async function downloadUserPhoto(token: string) {
 }
 
 export function getLocalPlannedBudget(
-  year: number, 
-  month: number, 
-  regionId?: string | number, 
+  year: number,
+  month: number,
+  regionId?: string | number,
   schoolId?: string | number
 ) {
   const key = 'mock_budget_history';
   const history = JSON.parse(localStorage.getItem(key) || '[]');
   return history.find((h: any) => {
-      const yearMatch = Number(h.year) === year;
-      const monthMatch = Number(h.month) === month;
-      
-      let regionMatch = true;
-      if (regionId && String(regionId) !== 'all') {
-          regionMatch = String(h.region_id) === String(regionId);
-      }
-      
-      let schoolMatch = true;
-      if (schoolId && String(schoolId) !== 'all') {
-          schoolMatch = String(h.school_id) === String(schoolId);
-      }
-      
-      return yearMatch && monthMatch && regionMatch && schoolMatch;
+    const yearMatch = Number(h.year) === year;
+    const monthMatch = Number(h.month) === month;
+
+    let regionMatch = true;
+    if (regionId && String(regionId) !== 'all') {
+      regionMatch = String(h.region_id) === String(regionId);
+    }
+
+    let schoolMatch = true;
+    if (schoolId && String(schoolId) !== 'all') {
+      schoolMatch = String(h.school_id) === String(schoolId);
+    }
+
+    return yearMatch && monthMatch && regionMatch && schoolMatch;
   });
 }
 

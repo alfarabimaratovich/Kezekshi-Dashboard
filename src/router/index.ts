@@ -1,8 +1,8 @@
-import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '@/stores/useAuth'
 import NProgress from 'nprogress'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   { path: '/', component: () => import('@/pages/Home.vue'), meta: { requiresAuth: true } },
   { path: '/stats', component: () => import('@/pages/Stats.vue'), meta: { requiresAuth: true } },
   { path: '/my-children', component: () => import('@/pages/MyChildren.vue'), meta: { requiresAuth: true } },
@@ -15,7 +15,7 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes,
+  routes
 })
 
 // Configure NProgress
