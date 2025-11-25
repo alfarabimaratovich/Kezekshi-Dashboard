@@ -5,7 +5,8 @@ import { normalizePhone } from './phone';
 const BASE = 'https://api.kezekshi.kz:39443';
 
 // Общий токен для всех запросов (используется для публичных эндпоинтов, где нужен токен приложения)
-const COMMON_TOKEN = import.meta.env.VITE_API_TEST_TOKEN || '0453ed44a13b074e68e3bd95da2dd24c0f6a8f967b7d739e0c13db621806061b'
+// const COMMON_TOKEN = import.meta.env.VITE_API_TEST_TOKEN || '0453ed44a13b074e68e3bd95da2dd24c0f6a8f967b7d739e0c13db621806061b'
+import { COMMON_TOKEN } from "./token";
 
 export async function getUserData(token: string, changesAfter?: string) {
   // if (import.meta.env.DEV) {
