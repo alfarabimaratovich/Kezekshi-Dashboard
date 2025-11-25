@@ -1,9 +1,9 @@
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuth } from '@/stores/useAuth'
+import { notify } from '@/lib/notifications'
 import { normalizePhone } from '@/lib/phone'
 import { getUserErrorMessage } from '@/lib/userError'
-import { notify } from '@/lib/notifications'
+import { useAuth } from '@/stores/useAuth'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 export function useLogin() {
   const phone = ref('')
@@ -27,7 +27,11 @@ export function useLogin() {
     loading.value = true
     try {
       await auth.login(cleanPhone, password.value, '')
-      router.replace('/')
+      if (auth.isAuth && auth.userProfile.value.roles.includes('US')) {
+        router.replace('/my-children')
+      } else {
+        router.replace('/')
+      }
     } catch (err: any) {
       error.value = getUserErrorMessage(err)
     } finally {

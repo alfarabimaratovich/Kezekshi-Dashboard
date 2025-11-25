@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useProfile } from '@/composables/useProfile'
 import { Shield } from 'lucide-vue-next'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
 
-import ProfileSidebar from '@/components/profile/ProfileSidebar.vue'
-import ProfileInfo from '@/components/profile/ProfileInfo.vue'
 import BudgetPlanning from '@/components/profile/BudgetPlanning.vue'
+import ProfileInfo from '@/components/profile/ProfileInfo.vue'
+import ProfileSidebar from '@/components/profile/ProfileSidebar.vue'
+import { useSecurityStore } from '@/stores/securityStore'
+import { watch } from 'vue'
+
+const securityStore = useSecurityStore()
 
 const {
   isLoading,
@@ -33,6 +37,13 @@ const {
   cancelEdit,
   handleSaveBudget
 } = useProfile()
+
+watch(activeTab, (newTab) => {
+  // If user tries to access 'planning' tab without permission, redirect to 'profile' tab
+  if(newTab === 'planning' && securityStore.canAccessPage('planning') === false) {
+    activeTab.value = 'profile'
+  }
+})
 </script>
 
 <template>
@@ -62,7 +73,7 @@ const {
         </div>
 
         <!-- Planning Tab -->
-        <div v-if="activeTab === 'planning'" class="space-y-6">
+        <div v-if="activeTab === 'planning' && securityStore.canAccessPage('planning')" class="space-y-6">
           <BudgetPlanning 
             v-model:budget-form="budgetForm"
             :regions="regions"

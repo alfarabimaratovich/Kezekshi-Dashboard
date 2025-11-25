@@ -1,7 +1,9 @@
-import { ref, computed, watch, onMounted, type Ref } from 'vue'
-import { getRegions, getSchools, getStudentsStats, getPassageStats, getDinnerStats } from '@/lib/api'
+import { getDinnerStats, getPassageStats, getRegions, getSchools, getStudentsStats } from '@/lib/api'
+import { useSecurityStore } from '@/stores/securityStore'
+import { useAuth } from '@/stores/useAuth'
 import { getLocalTimeZone, today } from '@internationalized/date'
 import type { DateRange } from 'reka-ui'
+import { computed, onMounted, ref, watch, type Ref } from 'vue'
 
 export interface StatsRow {
   id: number
@@ -32,6 +34,9 @@ export function useStats() {
   const selectedRegion = ref<string>('')
   const selectedSchool = ref<string>('')
 
+  const security = useSecurityStore()
+  const auth = useAuth()
+
   const dateRange = ref({
     start: today(getLocalTimeZone()),
     end: today(getLocalTimeZone()),
@@ -53,7 +58,7 @@ export function useStats() {
 
   const totalStats = computed(() => {
     if (statsData.value.length === 0) return null
-    
+
     return statsData.value.reduce((acc, curr) => {
       return {
         totalSystem: {
@@ -86,7 +91,7 @@ export function useStats() {
 
   const fetchStatsData = async () => {
     if (!selectedRegion.value) return
-    
+
     try {
       const startDate = dateRange.value.start?.toString() || ''
       const endDate = dateRange.value.end?.toString() || startDate
@@ -96,7 +101,7 @@ export function useStats() {
         getPassageStats(startDate, endDate, selectedRegion.value, selectedSchool.value),
         getDinnerStats(startDate, endDate, selectedRegion.value, selectedSchool.value)
       ])
-      
+
       const rows: StatsRow[] = []
       let idCounter = 1
 
@@ -261,26 +266,95 @@ export function useStats() {
       const data = await getSchools(newRegion)
       if (Array.isArray(data)) {
         const schools = data.map((s: any) => ({ value: String(s.school_id), label: s.school_name_ru }))
+
+        // If user is SC — restrict schools to his own school_id
+        if (security.isSC && security.userSchoolId != null) {
+          const mySchool = schools.find(s => Number(s.value) === Number(security.userSchoolId))
+          if (mySchool) {
+            availableSchools.value = [{ value: String(mySchool.value), label: mySchool.label }]
+            selectedSchool.value = String(mySchool.value)
+            return
+          }
+          availableSchools.value = []
+          selectedSchool.value = ''
+          return
+        }
+
+        // Default: all schools for region
         availableSchools.value = [{ value: 'all', label: 'Все школы' }, ...schools]
       }
     } catch (e) {
       console.error('Failed to fetch schools', e)
       availableSchools.value = []
     }
-  })
+  }, { immediate: true })
 
   watch([selectedRegion, selectedSchool, dateRange], () => {
     fetchStatsData()
   })
 
   onMounted(async () => {
+    // ensure profile loaded so security.userRegionId / userSchoolId are available
+    if (auth.isAuth.value && !auth.userProfile?.value) {
+      try { await auth.fetchProfile() } catch (e) { /* guard elsewhere will handle auth */ }
+    }
+
     try {
       const data = await getRegions()
       if (Array.isArray(data)) {
-        regions.value = [
-          { value: 'all', label: 'Все регионы' },
-          ...data.map((r: any) => ({ value: String(r.id), label: r.name_ru }))
-        ]
+        const mapped = data.map((r: any) => ({ value: String(r.id), label: r.name_ru, id: r.id }))
+
+        // DE: restrict regions to user's region_id
+        if (security.isDE && security.userRegionId != null) {
+          const myRegion = mapped.find(r => Number(r.id) === Number(security.userRegionId))
+          if (myRegion) {
+            regions.value = [{ value: String(myRegion.id), label: myRegion.label }]
+            selectedRegion.value = String(myRegion.id)
+          } else {
+            regions.value = []
+            selectedRegion.value = ''
+          }
+        }
+        // SC: find region that contains user's school and set both region & school
+        else if (security.isSC && security.userSchoolId != null) {
+          let foundRegion: { value: string; label: string; id: number } | null = null
+          let foundSchool: any = null
+
+          for (const r of mapped) {
+            try {
+              const schools = await getSchools(String(r.id))
+              if (Array.isArray(schools)) {
+                const s = schools.find((sch: any) => Number(sch.school_id) === Number(security.userSchoolId))
+                if (s) {
+                  foundRegion = r
+                  foundSchool = s
+                  break
+                }
+              }
+            } catch (e) {
+              // ignore errors and continue search
+            }
+          }
+
+          if (foundRegion && foundSchool) {
+            regions.value = [{ value: String(foundRegion.id), label: foundRegion.label }]
+            selectedRegion.value = String(foundRegion.id)
+            availableSchools.value = [{ value: String(foundSchool.school_id), label: foundSchool.school_name_ru }]
+            selectedSchool.value = String(foundSchool.school_id)
+          } else {
+            regions.value = []
+            selectedRegion.value = ''
+            availableSchools.value = []
+            selectedSchool.value = ''
+          }
+        }
+        // Default: all regions
+        else {
+          regions.value = [
+            { value: 'all', label: 'Все регионы' },
+            ...mapped.map((r: any) => ({ value: String(r.id), label: r.label }))
+          ]
+        }
       }
     } catch (e) {
       console.error('Failed to fetch regions', e)

@@ -1,6 +1,6 @@
-import { ref, watch } from 'vue'
-import { getUserData, login as apiLogin, downloadUserPhoto } from '@/lib/api'
 import { notify } from '@/lib'
+import { login as apiLogin, downloadUserPhoto, getUserData } from '@/lib/api'
+import { ref, watch } from 'vue'
 
 const AUTH_KEY = 'authToken'
 const isAuth = ref<boolean>(!!localStorage.getItem(AUTH_KEY))
@@ -41,29 +41,31 @@ export function useAuth() {
     try {
       const profile = await getUserData(authToken.value)
       userProfile.value = profile
-      
+
+      console.log('User profile loaded', profile)
+
       // Fetch photo
       try {
         const photoData = await downloadUserPhoto(authToken.value)
-        
-        if (photoData) {
-            let url = ''
-            if (typeof photoData === 'string') {
-                url = photoData
-            } else if (typeof photoData === 'object' && photoData !== null) {
-                    if ('photo' in photoData) url = photoData.photo
-                    else if ('image' in photoData) url = photoData.image
-                    else if ('data' in photoData) url = photoData.data
-                    else if ('url' in photoData) url = photoData.url
-            }
 
-            if (url) {
-                url = url.trim().replace(/^"|"$/g, '')
-                if (!url.startsWith('http') && !url.startsWith('data:')) {
-                    url = `data:image/jpeg;base64,${url}`
-                }
-                userPhotoUrl.value = url
+        if (photoData) {
+          let url = ''
+          if (typeof photoData === 'string') {
+            url = photoData
+          } else if (typeof photoData === 'object' && photoData !== null) {
+            if ('photo' in photoData) url = photoData.photo
+            else if ('image' in photoData) url = photoData.image
+            else if ('data' in photoData) url = photoData.data
+            else if ('url' in photoData) url = photoData.url
+          }
+
+          if (url) {
+            url = url.trim().replace(/^"|"$/g, '')
+            if (!url.startsWith('http') && !url.startsWith('data:')) {
+              url = `data:image/jpeg;base64,${url}`
             }
+            userPhotoUrl.value = url
+          }
         }
       } catch (e) {
         console.warn('Failed to load user photo', e)

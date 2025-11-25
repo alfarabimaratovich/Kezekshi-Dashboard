@@ -1,15 +1,7 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-const route = useRoute()
-const router = useRouter()
-const activePath = computed(() => route.path)
-import {
-  NavigationMenu,
-  NavigationMenuList,
-  NavigationMenuItem,
-  NavigationMenuLink,
-} from '@/components/ui/navigation-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ButtonGroup } from '@/components/ui/button-group'
+import Button from '@/components/ui/button/Button.vue'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,14 +10,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ButtonGroup } from '@/components/ui/button-group'
-import Button from '@/components/ui/button/Button.vue'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { LogOut, Menu, X, Moon, Sun, User, Wallet } from 'lucide-vue-next'
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+} from '@/components/ui/navigation-menu'
+import { useSecurityStore } from '@/stores/securityStore'
 import { useDark, useToggle } from '@vueuse/core'
+import { LogOut, Menu, Moon, Sun, User, Wallet, X } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+const route = useRoute()
+const router = useRouter()
+const activePath = computed(() => route.path)
 
 const isDark = useDark()
 const toggleDark = useToggle(isDark)
+const securityStore = useSecurityStore()
 
 const isMenuOpen = ref(false)
 // use centralized auth store
@@ -66,7 +68,7 @@ const logout = () => {
           <!-- Desktop Navigation Menu -->
           <NavigationMenu v-if="isAuth" class="hidden md:block">
             <NavigationMenuList class="flex gap-6">
-              <NavigationMenuItem>
+              <NavigationMenuItem v-if="securityStore.canAccessPage('home')">
                 <NavigationMenuLink as-child>
                   <a 
                     href="/" 
@@ -77,7 +79,7 @@ const logout = () => {
                   </a>
                 </NavigationMenuLink>
               </NavigationMenuItem>
-              <NavigationMenuItem>
+              <NavigationMenuItem v-if="securityStore.canAccessPage('stats')">
                 <NavigationMenuLink as-child>
                   <a 
                     href="/stats" 
@@ -88,7 +90,7 @@ const logout = () => {
                   </a>
                 </NavigationMenuLink>
               </NavigationMenuItem>
-              <NavigationMenuItem>
+              <NavigationMenuItem v-if="securityStore.canAccessPage('my-children')">
                 <NavigationMenuLink as-child>
                   <a 
                     href="/my-children" 
@@ -146,7 +148,7 @@ const logout = () => {
                   <span>Профиль</span>
                 </a>
               </DropdownMenuItem>
-              <DropdownMenuItem as-child>
+              <DropdownMenuItem as-child v-if="securityStore.canAccessPage('planning')">
                 <a href="/profile?tab=planning" class="cursor-pointer flex items-center w-full">
                   <Wallet class="mr-2 h-4 w-4" />
                   <span>Планирование</span>
