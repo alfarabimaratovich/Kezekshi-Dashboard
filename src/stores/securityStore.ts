@@ -5,12 +5,32 @@ import { useAuth } from './useAuth';
 export const useSecurityStore = defineStore('security', () => {
     const { fetchProfile, userProfile } = useAuth();
 
+    // normalize roles into simple uppercase strings (handles strings, objects or weird payloads)
+    const normalizeRoles = (raw: any): string[] => {
+        if (!raw) return [];
+        let arr = raw;
+        // if object that looks like array-like, try values()
+        if (!Array.isArray(arr) && typeof arr === 'object') {
+            arr = Object.values(arr);
+        }
+        if (!Array.isArray(arr)) return [String(arr).trim().toUpperCase()];
+        return arr
+            .map((r: any) => {
+                if (typeof r === 'string') return r.trim().toUpperCase();
+                if (r && typeof r === 'object') {
+                    return String(r.code ?? r.role ?? r.name ?? r.id ?? '').trim().toUpperCase();
+                }
+                return '';
+            })
+            .filter(Boolean);
+    };
+
+    const normalizedRoles = computed(() => normalizeRoles(userProfile.value?.roles));
+
     // helper to check if role exists in roles array
     const hasRole = (role: string) => {
-        return !!(
-            userProfile.value &&
-            Array.isArray(userProfile.value.roles) &&
-            userProfile.value.roles.includes(role));
+        const want = String(role).trim().toUpperCase();
+        return normalizedRoles.value.includes(want);
     };
 
     const isAdmin = computed(() => hasRole('AD'));
@@ -27,17 +47,31 @@ export const useSecurityStore = defineStore('security', () => {
 
     // pageKey: 'home' | 'stats' | 'planning' | 'profile' | 'my-children'
     const canAccessPage = (pageKey: string) => {
-        if (isAdmin.value) return true;
-        if (isDE.value) {
-            return ['login', 'register', 'reset', 'home', 'stats', 'planning', 'profile'].includes(pageKey);
+        const key = String(pageKey ?? '').trim();
+        if (!key) return false;
+
+        // ADMIN allowed everywhere
+        if (normalizedRoles.value.includes('AD')) return true;
+
+        // base public pages
+        const allowed = new Set<string>(['login', 'register', 'reset']);
+
+        // mapping by role — will be unioned if user has several roles
+        const roleMap: Record<string, string[]> = {
+            DE: ['home', 'stats', 'planning', 'profile'],
+            SC: ['home', 'stats', 'profile'],
+            US: ['my-children', 'profile']
+        };
+
+        // union pages for all roles the user has
+        for (const r of normalizedRoles.value) {
+            const pages = roleMap[r];
+            if (pages && pages.length) {
+                pages.forEach(p => allowed.add(p));
+            }
         }
-        if (isSC.value) {
-            return ['login', 'register', 'reset', 'home', 'stats', 'profile'].includes(pageKey);
-        }
-        if (isUser.value) {
-            return ['login', 'register', 'reset', 'my-children', 'profile'].includes(pageKey);
-        }
-        return ['login', 'register', 'reset'].includes(pageKey);
+
+        return allowed.has(key);
     };
 
     // region access: DE can access own region, AD can access all
