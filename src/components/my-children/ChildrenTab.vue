@@ -66,8 +66,8 @@ defineEmits<{
               <div class="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-border/50">
                 <div :class="[
                   'flex items-center gap-2 text-sm font-medium transition-colors',
-                  child.atSchool 
-                    ? 'text-orange-600 dark:text-orange-400' 
+                  child.atSchool
+                    ? 'text-yellow-400 dark:text-yellow-400'
                     : 'text-muted-foreground'
                 ]">
                   <img v-if="child.atSchool" src="/book.svg" class="h-8 w-8" alt="In School" />
@@ -79,9 +79,9 @@ defineEmits<{
 
                 <div :class="[
                   'flex items-center gap-2 text-sm font-medium transition-colors',
-                  child.hadLunch 
-                    ? 'text-green-600 dark:text-green-400' 
-                    : 'text-muted-foreground'
+                  child.hadLunch
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'
                 ]">
                   <img :src="child.hadLunch ? '/true.svg' : '/false.svg'" class="h-8 w-8" alt="Lunch" />
                   {{ child.hadLunch ? 'Еда выдана' : 'Еда не выдана' }}
