@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Baby } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Baby } from 'lucide-vue-next';
 
 defineProps<{
   children: any[]
@@ -60,8 +60,8 @@ defineEmits<{
               <Baby v-else class="h-8 w-8 text-muted-foreground" />
             </div>
             <div class="text-sm space-y-1">
-              <p><span class="font-medium">Школа:</span> {{ child.school_name || 'Не указана' }}</p>
-              <p><span class="font-medium">Класс:</span> {{ child.grade || 'Не указан' }}</p>
+              <p><span class="font-medium">Школа:</span> {{ child.school_name_ru || 'Не указана' }}</p>
+              <p><span class="font-medium">Класс:</span> {{ child.class_number || 'Не указан' }}</p>
               
               <div class="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-border/50">
                 <div :class="[
