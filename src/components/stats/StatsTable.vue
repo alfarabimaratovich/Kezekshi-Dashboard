@@ -5,6 +5,16 @@ import {
   CardFooter,
 } from '@/components/ui/card'
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationFirst,
+  PaginationItem,
+  PaginationLast,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -20,16 +30,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationFirst,
-  PaginationItem,
-  PaginationLast,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
-import { 
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -82,33 +82,32 @@ defineEmits<{
       <Table>
         <TableHeader>
           <TableRow class="bg-palette-blue-b/5 hover:bg-palette-blue-b/10">
-            <TableHead rowspan="2" class="w-[50px] text-center border-r font-semibold text-palette-blue-a">№</TableHead>
-            <TableHead rowspan="2" class="max-w-[200px] border-r font-semibold text-palette-blue-a">Школа</TableHead>
-            <TableHead rowspan="2" class="min-w-[120px] border-r font-semibold text-palette-blue-a">Город</TableHead>
-            <TableHead colspan="4" class="text-center border-r border-b font-semibold text-palette-blue-a">Всего занесено в систему</TableHead>
-            <TableHead colspan="3" class="text-center border-r border-b font-semibold text-palette-blue-a">Посетило на дату</TableHead>
-            <TableHead colspan="2" class="text-center border-r border-b font-semibold text-palette-blue-a">Питание 1-4 классы</TableHead>
-            <TableHead colspan="2" class="text-center border-b font-semibold text-palette-blue-a">Питание 5-11 классы</TableHead>
+            <TableHead v-col-resize rowspan="2" class="resizable w-[50px] text-center border-r font-semibold text-palette-blue-a">№</TableHead>
+            <TableHead v-col-resize rowspan="2" class="resizable min-w-[200px] border-r font-semibold text-palette-blue-a">Школа</TableHead>
+            <TableHead v-col-resize rowspan="2" class="resizable min-w-[120px] border-r font-semibold text-palette-blue-a">Город</TableHead>
+            <TableHead v-col-resize colspan="4" class="resizable text-center border-r border-b font-semibold text-palette-blue-a">Всего занесено в систему</TableHead>
+            <TableHead v-col-resize colspan="3" class="resizable text-center border-r border-b font-semibold text-palette-blue-a">Посетило на дату</TableHead>
+            <TableHead v-col-resize colspan="2" class="resizable text-center border-r border-b font-semibold text-palette-blue-a">Питание 1-4 классы</TableHead>
+            <TableHead v-col-resize colspan="2" class="resizable text-center border-b font-semibold text-palette-blue-a">Питание 5-11 классы</TableHead>
           </TableRow>
           <TableRow class="bg-palette-blue-b/5 hover:bg-palette-blue-b/10">
             <!-- Всего занесено -->
-            <TableHead class="text-center border-r text-xs text-muted-foreground">1-4</TableHead>
-            <TableHead class="text-center border-r text-xs text-muted-foreground">5-11</TableHead>
-            <TableHead class="text-center border-r text-xs text-muted-foreground">Всего уч.</TableHead>
-            <TableHead class="text-center border-r text-xs text-muted-foreground">Персонал</TableHead>
+            <TableHead v-col-resize class="resizable text-center border-r text-xs text-muted-foreground">1-4</TableHead>
+            <TableHead v-col-resize class="resizable text-center border-r text-xs text-muted-foreground">5-11</TableHead>
+            <TableHead v-col-resize class="resizable text-center border-r text-xs text-muted-foreground">Всего уч.</TableHead>
+            <TableHead v-col-resize class="resizable text-center border-r text-xs text-muted-foreground">Персонал</TableHead>
             
             <!-- Посетило -->
-            <TableHead class="text-center border-r text-xs text-muted-foreground">1-4</TableHead>
-            <TableHead class="text-center border-r text-xs text-muted-foreground">5-11</TableHead>
-            <TableHead class="text-center border-r text-xs text-muted-foreground">Персонал</TableHead>
+            <TableHead v-col-resize class="resizable text-center border-r text-xs text-muted-foreground">1-4</TableHead>
+            <TableHead v-col-resize class="resizable text-center border-r text-xs text-muted-foreground">5-11</TableHead>
+            <TableHead v-col-resize class="resizable text-center border-r text-xs text-muted-foreground">Персонал</TableHead>
 
             <!-- Питание 1-4 -->
-            <TableHead class="text-center border-r text-xs text-muted-foreground">Получили</TableHead>
-            <TableHead class="text-center border-r text-xs text-muted-foreground">%</TableHead>
-
+            <TableHead v-col-resize class="resizable text-center border-r text-xs text-muted-foreground">Получили</TableHead>
+            <TableHead v-col-resize class="resizable text-center border-r text-xs text-muted-foreground">%</TableHead>
             <!-- Питание 5-11 -->
-            <TableHead class="text-center border-r text-xs text-muted-foreground">Получили</TableHead>
-            <TableHead class="text-center text-xs text-muted-foreground">%</TableHead>
+            <TableHead v-col-resize class="resizable text-center border-r text-xs text-muted-foreground">Получили</TableHead>
+            <TableHead v-col-resize class="resizable text-center text-xs text-muted-foreground">%</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -219,3 +218,21 @@ defineEmits<{
     </CardFooter>
   </Card>
 </template>
+
+<style scoped>
+/* небольшой стиль для рукояти, можно положить в global style.css если нужно */
+.resizable { position: relative; overflow: hidden; }
+/* handle visual (transparent by default) */
+.col-resizer-handle { background: transparent; }
+/* optional: show thin visual indicator */
+.col-resizer-handle::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 10%;
+  bottom: 10%;
+  width: 1px;
+  background: rgba(120,120,120,0.35);
+  border-radius: 1px;
+}
+</style>
