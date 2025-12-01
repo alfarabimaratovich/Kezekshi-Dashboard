@@ -25,7 +25,10 @@ export const useSecurityStore = defineStore('security', () => {
             .filter(Boolean);
     };
 
-    const normalizedRoles = computed(() => normalizeRoles(userProfile.value?.roles));
+    const normalizedRoles = computed(() => {
+        const r = normalizeRoles(userProfile.value?.roles);
+        return r.length ? r : ['US'];
+    });
 
     // helper to check if role exists in roles array
     const hasRole = (role: string) => {

@@ -25,3 +25,4 @@ dist-ssr
 docker/nginx/certs
 .env.development
 .env.production
+.env
