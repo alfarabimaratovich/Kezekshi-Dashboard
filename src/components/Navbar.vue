@@ -101,6 +101,17 @@ const logout = () => {
                   </a>
                 </NavigationMenuLink>
               </NavigationMenuItem>
+              <NavigationMenuItem v-if="securityStore.canAccessPage('admin')">
+                <NavigationMenuLink as-child>
+                  <a 
+                    href="/admin" 
+                    class="px-3 py-2 rounded-md transition-colors duration-200 font-medium"
+                    :class="activePath === '/admin' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
+                  >
+                    Админ
+                  </a>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
         </div>

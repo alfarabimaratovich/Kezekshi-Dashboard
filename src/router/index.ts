@@ -12,6 +12,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/reset', name: 'reset', component: () => import('@/pages/Reset.vue'), meta: { hideNavbar: true } },
   { path: '/register', name: 'register', component: () => import('@/pages/Register.vue'), meta: { hideNavbar: true } },
   { path: '/403', name: '403', component: () => import('@/pages/403.vue'), meta: { requiresAuth: true } },
+  { path: '/admin', name: 'admin', component: () => import('@/pages/Admin.vue'), meta: { requiresAuth: true } },
   { path: '/:pathMatch(.*)*', redirect: '/login' }
 ]
 
