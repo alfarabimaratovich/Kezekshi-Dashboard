@@ -1,5 +1,6 @@
 import { notify } from '@/lib'
 import { login as apiLogin, downloadUserPhoto, getUserData } from '@/lib/api'
+import router from '@/router'
 import { ref, watch } from 'vue'
 
 const AUTH_KEY = 'authToken'
@@ -79,6 +80,8 @@ export function useAuth() {
         logout()
       } else {
         notify('Ошибка', 'Не удалось загрузить профиль. Попробуйте позже.', 'error')
+        logout()
+        router.push('/login')
       }
     }
   }
