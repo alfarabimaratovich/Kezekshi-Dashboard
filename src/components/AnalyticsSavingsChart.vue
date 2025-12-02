@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import type { ChartConfig } from "@/components/ui/chart"
-import { VisAxis, VisGroupedBar, VisXYContainer } from "@unovis/vue"
 import {
   Card,
   CardContent,
@@ -9,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import type { ChartConfig } from "@/components/ui/chart"
 import {
   ChartContainer,
   ChartCrosshair,
@@ -24,14 +22,17 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { getMonthlySavings } from '@/lib/api'
+import { VisAxis, VisGroupedBar, VisXYContainer } from "@unovis/vue"
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps<{
   regionId?: string
   schoolId?: string
 }>()
 
-const years = ['2024', '2025']
-const selectedYear = ref('2025')
+const currentYear = new Date().getFullYear()
+const years = [String(currentYear - 2), String(currentYear - 1), String(currentYear)]
+const selectedYear = ref(String(currentYear))
 const apiData = ref<any[]>([])
 
 const fetchData = async () => {
@@ -50,31 +51,33 @@ const fetchData = async () => {
 
 watch([selectedYear, () => props.regionId, () => props.schoolId], fetchData, { immediate: true })
 
+// Use explicit month index (0..11) as x-value to avoid duplicated/ambiguous tick labels
+const MONTH_INDICES = Array.from({ length: 12 }, (_, i) => i)
 const chartData = computed(() => {
-  const yearInt = parseInt(selectedYear.value)
-  // Initialize with 0 for all months
+  const yearInt = parseInt(selectedYear.value, 10)
   const months = Array.from({ length: 12 }, (_, i) => ({
-    date: new Date(yearInt, i, 1),
+    month: i, // 0..11 - will be used as x
+    dateUtc: Date.UTC(yearInt, i, 1), // keep UTC timestamp for tooltip if needed
     savings: 0,
     expenses: 0
   }))
 
-  // Fill with API data
+  // Fill with API data (item.month expected 1..12)
   apiData.value.forEach(item => {
-    if (item.month >= 1 && item.month <= 12) {
-      // Ensure values are numbers and not negative
+    const m = Number(item.month)
+    if (m >= 1 && m <= 12) {
       const savings = Math.max(0, Number(item.saved_expense) || 0)
       const expenses = Math.max(0, Number(item.actual_expense) || 0)
-      
-      months[item.month - 1].savings = savings
-      months[item.month - 1].expenses = expenses
+      months[m - 1].savings = savings
+      months[m - 1].expenses = expenses
     }
   })
 
+  // already ordered by month index
   return months
 })
 
-type Data = { date: Date; savings: number; expenses: number }
+type Data = { month: number; dateUtc: number; savings: number; expenses: number }
 
 const chartConfig = {
   savings: {
@@ -100,9 +103,14 @@ const formatCurrency = (value: number) => {
 
 const crosshairTemplate = componentToString(chartConfig, ChartTooltipContent, {
   labelFormatter(d: any) {
-    return new Date(d).toLocaleDateString('ru-RU', {
+    // d can be fractional (position on axis) — round to nearest month and clamp to 0..11
+    const raw = Number(d)
+    const m = Math.min(11, Math.max(0, Math.round(raw)))
+    const yr = Number(selectedYear.value)
+    return new Date(Date.UTC(yr, m, 1)).toLocaleDateString('ru-RU', {
       month: 'long',
       year: 'numeric',
+      timeZone: 'UTC'
     })
   },
 })
@@ -154,23 +162,22 @@ const crosshairTemplate = componentToString(chartConfig, ChartTooltipContent, {
           :y-domain="[0, undefined]"
         >
           <VisGroupedBar
-            :x="(d: Data) => d.date"
-            :y="(d: Data) => d[activeChart]"
-            :color="chartConfig[activeChart].color"
-            :bar-padding="0.1"
-            :rounded-corners="4"
-          />
+             :x="(d: Data) => d.month"
+             :y="(d: Data) => d[activeChart]"
+             :color="chartConfig[activeChart].color"
+             :bar-padding="0.1"
+             :rounded-corners="4"
+           />
           <VisAxis
             type="x"
-            :x="(d: Data) => d.date"
+            :x="(d: Data) => d.month"
             :tick-line="false"
             :domain-line="false"
             :grid-line="false"
+            :tick-values="MONTH_INDICES"
             :tick-format="(d: number) => {
-              const date = new Date(d)
-              return date.toLocaleDateString('ru-RU', {
-                month: 'short',
-              })
+              // map numeric month index to localized short month (UTC)
+              return new Date(Date.UTC(2000, Math.round(d), 1)).toLocaleDateString('ru-RU', { month: 'short', timeZone: 'UTC' })
             }"
           />
           <VisAxis
