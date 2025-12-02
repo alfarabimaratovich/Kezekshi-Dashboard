@@ -35,7 +35,8 @@ const {
   months,
   handleSaveProfile,
   cancelEdit,
-  handleSaveBudget
+  handleSaveBudget,
+  isEditingExistingBudget
 } = useProfile()
 
 watch(activeTab, (newTab) => {
@@ -88,6 +89,7 @@ watch(activeTab, (newTab) => {
             :total-history-pages="totalHistoryPages"
             :paginated-budget-history="paginatedBudgetHistory"
             :schools="schools"
+            :is-editing-existing-budget="isEditingExistingBudget"
             @save-budget="handleSaveBudget"
           />
         </div>

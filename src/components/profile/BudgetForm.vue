@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CreditCard, Save, Users } from 'lucide-vue-next'
+import { CreditCard, Edit, Save, Users } from 'lucide-vue-next'
 
 interface BudgetForm {
   regionId: string
@@ -23,6 +23,7 @@ const props = defineProps<{
   months: { value: string; label: string }[]
   isSavingBudget: boolean
   user: any
+  isEditingExisting?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -38,8 +39,13 @@ const updateForm = (field: keyof BudgetForm, value: string) => {
 <template>
   <Card>
     <CardHeader>
-      <CardTitle>Создание плана</CardTitle>
-      <CardDescription>Укажите плановую сумму расходов</CardDescription>
+      <div class="flex items-center gap-2">
+        <CardTitle>{{ isEditingExisting ? 'Редактирование плана' : 'Создание плана' }}</CardTitle>
+        <Edit v-if="isEditingExisting" class="h-4 w-4 text-blue-500" />
+      </div>
+      <CardDescription>
+        {{ isEditingExisting ? 'Обновите плановую сумму расходов' : 'Укажите плановую сумму расходов' }}
+      </CardDescription>
     </CardHeader>
     <CardContent class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -153,7 +159,7 @@ const updateForm = (field: keyof BudgetForm, value: string) => {
     <CardFooter class="flex justify-end">
       <Button @click="$emit('save')" :disabled="isSavingBudget">
         <Save class="mr-2 h-4 w-4" />
-        {{ isSavingBudget ? 'Сохранение...' : 'Сохранить' }}
+        {{ isSavingBudget ? 'Сохранение...' : (isEditingExisting ? 'Обновить' : 'Сохранить') }}
       </Button>
     </CardFooter>
   </Card>

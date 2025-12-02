@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import BudgetForm from './BudgetForm.vue'
-import BudgetHistory from './BudgetHistory.vue'
+import { ref } from 'vue';
+import BudgetForm from './BudgetForm.vue';
+import BudgetHistory from './BudgetHistory.vue';
 
 defineProps<{
   budgetForm: any
@@ -17,6 +17,7 @@ defineProps<{
   totalHistoryPages: number
   paginatedBudgetHistory: any[]
   schools: any[]
+  isEditingExistingBudget: boolean
 }>()
 
 const emit = defineEmits<{
@@ -63,6 +64,7 @@ const planningSubTab = ref<'new' | 'history'>('new')
       :months="months"
       :is-saving-budget="isSavingBudget"
       :user="user"
+      :is-editing-existing="isEditingExistingBudget"
       @update:budget-form="(v) => $emit('update:budgetForm', v)"
       @save="$emit('saveBudget')"
     />
