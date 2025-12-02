@@ -132,7 +132,7 @@ defineEmits<{
             
             <TableCell class="text-center border-r">{{ row.totalSystem.grades1to4 }}</TableCell>
             <TableCell class="text-center border-r">{{ row.totalSystem.grades5to11 }}</TableCell>
-            <TableCell class="text-center border-r font-medium">{{ row.totalSystem.totalStudents }}</TableCell>
+            <TableCell class="text-center border-r font-medium">{{ row.totalSystem.grades1to4 + row.totalSystem.grades5to11 }}</TableCell>
             <TableCell class="text-center border-r text-muted-foreground">{{ row.totalSystem.staff }}</TableCell>
 
             <TableCell class="text-center border-r text-palette-green-a font-medium">{{ row.visited.grades1to4 }}</TableCell>
@@ -151,7 +151,7 @@ defineEmits<{
             
             <TableCell class="text-center border-r">{{ totalStats.totalSystem.grades1to4 }}</TableCell>
             <TableCell class="text-center border-r">{{ totalStats.totalSystem.grades5to11 }}</TableCell>
-            <TableCell class="text-center border-r">{{ totalStats.totalSystem.totalStudents }}</TableCell>
+            <TableCell class="text-center border-r">{{ totalStats.totalSystem.grades1to4 + totalStats.totalSystem.grades5to11 }}</TableCell>
             <TableCell class="text-center border-r">{{ totalStats.totalSystem.staff }}</TableCell>
 
             <TableCell class="text-center border-r text-palette-green-a">{{ totalStats.visited.grades1to4 }}</TableCell>
