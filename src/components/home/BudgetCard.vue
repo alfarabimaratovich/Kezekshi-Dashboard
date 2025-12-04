@@ -7,8 +7,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import Button from '@/components/ui/button/Button.vue'
-import { Wallet, CreditCard } from 'lucide-vue-next'
+import { CreditCard, Wallet } from 'lucide-vue-next'
 
 defineProps<{
   budgetData: {
@@ -46,25 +45,23 @@ const formatCurrency = (value: number) => {
               id="meal-price-input" 
               type="number" 
               placeholder="Введите стоимость" 
+              readonly
               :model-value="manualMealPrice"
               @update:model-value="(v) => $emit('update:manualMealPrice', v)"
             />
           </div>
           <div class="space-y-2">
             <Label for="student-count-input">Количество учеников</Label>
-            <div class="flex w-full max-w-sm items-center space-x-2">
+            <div class="flex w-full items-center space-x-2">
               <Input 
                 id="student-count-input" 
                 type="number" 
                 placeholder="Введите количество" 
+                readonly
                 :model-value="manualStudentCount"
                 @update:model-value="(v) => $emit('update:manualStudentCount', v)"
               />
-              <Button type="button" @click="$emit('applyBudget')">Применить</Button>
             </div>
-            <p class="text-xs text-muted-foreground">
-              Укажите количество учеников для расчета бюджета.
-            </p>
           </div>
         </div>
 
