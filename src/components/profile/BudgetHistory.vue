@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Search } from 'lucide-vue-next'
 
 const props = defineProps<{
   historySearch: string
@@ -27,8 +27,30 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(value)
 }
 
-const getMonthName = (month: number) => {
-  return props.months.find(m => Number(m.value) === month)?.label || month
+const getMonthName = (month: number | string) => {
+  let mNum: number | null = null
+
+  if (typeof month === 'number') {
+    mNum = month
+  } else if (typeof month === 'string') {
+    // поддерживаем форматы "2025-12-01", "2025-12" и простые строковые числа "12"
+    const isoMatch = month.match(/^(\d{4})-(\d{2})(?:-\d{2})?$/)
+    if (isoMatch) {
+      mNum = Number(isoMatch[2])
+    } else {
+      const n = Number(month)
+      if (!isNaN(n)) mNum = n
+    }
+  }
+
+  if (!mNum || Number.isNaN(mNum)) return String(month)
+
+  // ищем по props.months (значения могут быть '1'..'12' или '01'..'12')
+  const found = props.months.find(m => Number(m.value) === mNum)
+  if (found) return found.label
+
+  // fallback: локальная генерация названия месяца (UTC)
+  return new Date(Date.UTC(2000, mNum - 1, 1)).toLocaleDateString('ru-RU', { month: 'long' })
 }
 
 const getSchoolNameById = (id: number, savedName?: string) => {
@@ -103,8 +125,8 @@ const getSchoolNameById = (id: number, savedName?: string) => {
                     {{ getSchoolNameById(item.school_id, item.school_name) }}
                   </div>
                 </TableCell>
-                <TableCell>{{ formatCurrency(item.amount) }}</TableCell>
-                <TableCell>{{ formatCurrency(item.price) }}</TableCell>
+                <TableCell>{{ formatCurrency(item.plan_students_count * item.sum_per_student) }}</TableCell>
+                <TableCell>{{ formatCurrency(item.sum_per_student) }}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
