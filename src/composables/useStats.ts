@@ -91,15 +91,15 @@ export function useStats() {
 
   const fetchStatsData = async () => {
     if (!selectedRegion.value) return
-
+    const token = auth.authToken.value || ''
     try {
       const startDate = dateRange.value.start?.toString() || ''
       const endDate = dateRange.value.end?.toString() || startDate
 
       const [studentsData, passageData, dinnerData] = await Promise.all([
-        getStudentsStats(selectedRegion.value, selectedSchool.value),
-        getPassageStats(startDate, endDate, selectedRegion.value, selectedSchool.value),
-        getDinnerStats(startDate, endDate, selectedRegion.value, selectedSchool.value)
+        getStudentsStats(selectedRegion.value, selectedSchool.value, token),
+        getPassageStats(startDate, endDate, selectedRegion.value, selectedSchool.value, token),
+        getDinnerStats(startDate, endDate, selectedRegion.value, selectedSchool.value, token)
       ])
 
       const rows: StatsRow[] = []

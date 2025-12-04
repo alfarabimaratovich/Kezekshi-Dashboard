@@ -70,6 +70,7 @@ export function useDashboard() {
     try {
       const startDate = dateRange.value.start?.toString() || ''
       const endDate = dateRange.value.end?.toString() || startDate
+      const token = auth.authToken.value || ''
 
       const now = today(getLocalTimeZone())
       const startOfMonth = new Date(now.year, now.month - 1, 1).toISOString().split('T')[0]
@@ -83,11 +84,11 @@ export function useDashboard() {
         dinnerData,
         libraryData
       ] = await Promise.all([
-        getSummaryStats(startDate, endDate, selectedRegion.value, selectedSchool.value),
-        getSummaryStats(startOfMonth, endOfMonth, selectedRegion.value || '', selectedSchool.value || ''),
-        getPassageStats(startDate, endDate, selectedRegion.value, selectedSchool.value),
-        getDinnerStats(startDate, endDate, selectedRegion.value, selectedSchool.value),
-        getLibraryStats(startDate, endDate, selectedRegion.value, selectedSchool.value)
+        getSummaryStats(startDate, endDate, selectedRegion.value, selectedSchool.value, token),
+        getSummaryStats(startOfMonth, endOfMonth, selectedRegion.value || '', selectedSchool.value || '', token),
+        getPassageStats(startDate, endDate, selectedRegion.value, selectedSchool.value, token),
+        getDinnerStats(startDate, endDate, selectedRegion.value, selectedSchool.value, token),
+        getLibraryStats(startDate, endDate, selectedRegion.value, selectedSchool.value, token)
       ])
 
       if (summaryStats) {

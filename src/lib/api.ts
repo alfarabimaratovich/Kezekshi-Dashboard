@@ -315,7 +315,7 @@ export async function getSchools(regionId: string | number) {
   return data.filter((school: any) => String(school.region_id) === String(regionId));
 }
 
-export async function getStudentsStats(regionId?: string | number, schoolId?: string | number) {
+export async function getStudentsStats(regionId?: string | number, schoolId?: string | number, token?: string) {
   const params = new URLSearchParams();
   if (regionId && String(regionId) !== 'all') {
     params.append('id_region', String(regionId));
@@ -329,7 +329,7 @@ export async function getStudentsStats(regionId?: string | number, schoolId?: st
     headers:
     {
       'accept': 'application/json',
-      'Authorization': `Bearer ${COMMON_TOKEN}`
+      'Authorization': `Bearer ${token || COMMON_TOKEN}`
     }
   });
 
@@ -352,7 +352,8 @@ export async function getPassageStats(
   startDate: string,
   endDate: string,
   regionId?: string | number,
-  schoolId?: string | number
+  schoolId?: string | number,
+  token?: string
 ) {
   const params = new URLSearchParams();
   params.append('start_date', startDate);
@@ -368,7 +369,7 @@ export async function getPassageStats(
     method: 'GET',
     headers: {
       'accept': 'application/json',
-      'Authorization': `Bearer ${COMMON_TOKEN}`
+      'Authorization': `Bearer ${token || COMMON_TOKEN}`
     }
   });
 
@@ -391,7 +392,8 @@ export async function getDinnerStats(
   startDate: string,
   endDate: string,
   regionId?: string | number,
-  schoolId?: string | number
+  schoolId?: string | number,
+  token?: string
 ) {
   const params = new URLSearchParams();
   params.append('start_date', startDate);
@@ -407,7 +409,7 @@ export async function getDinnerStats(
     method: 'GET',
     headers: {
       'accept': 'application/json',
-      'Authorization': `Bearer ${COMMON_TOKEN}`
+      'Authorization': `Bearer ${token || COMMON_TOKEN}`
     }
   });
 
@@ -430,7 +432,8 @@ export async function getLibraryStats(
   startDate: string,
   endDate: string,
   regionId?: string | number,
-  schoolId?: string | number
+  schoolId?: string | number,
+  token?: string
 ) {
   const params = new URLSearchParams();
   params.append('start_date', startDate);
@@ -446,7 +449,7 @@ export async function getLibraryStats(
     method: 'GET',
     headers: {
       'accept': 'application/json',
-      'Authorization': `Bearer ${COMMON_TOKEN}`
+      'Authorization': `Bearer ${token || COMMON_TOKEN}`
     }
   });
 
@@ -469,7 +472,8 @@ export async function getSummaryStats(
   startDate: string,
   endDate: string,
   regionId?: string | number,
-  schoolId?: string | number
+  schoolId?: string | number,
+  token?: string
 ) {
   const params = new URLSearchParams();
   params.append('start_date', startDate);
@@ -486,7 +490,7 @@ export async function getSummaryStats(
     method: 'GET',
     headers: {
       'accept': 'application/json',
-      'Authorization': `Bearer ${COMMON_TOKEN}`
+      'Authorization': `Bearer ${token || COMMON_TOKEN}`
     }
   });
 
@@ -628,38 +632,36 @@ export async function changeUserData(token: string, payload: {
 }
 
 export async function setPlannedBudget(payload: {
-  year: number,
   month: number,
   amount: number,
   price: number,
   region_id?: number,
   school_id?: number,
   school_name?: string
-}) {
-  console.log('[API] Setting planned budget (MOCK):', payload);
+}, token?: string) {
+  // console.log('[API] Setting planned budget (MOCK):', payload);
 
-  // MOCK IMPLEMENTATION using localStorage
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 50));
+  // // MOCK IMPLEMENTATION using localStorage
+  // // Simulate network delay
+  // await new Promise(resolve => setTimeout(resolve, 50));
 
-  const key = 'mock_budget_history';
-  const history = JSON.parse(localStorage.getItem(key) || '[]');
+  // const key = 'mock_budget_history';
+  // const history = JSON.parse(localStorage.getItem(key) || '[]');
 
-  // Add timestamp or ID if needed, but payload is enough for now
-  history.unshift({ ...payload, created_at: new Date().toISOString() });
+  // // Add timestamp or ID if needed, but payload is enough for now
+  // history.unshift({ ...payload, created_at: new Date().toISOString() });
 
-  localStorage.setItem(key, JSON.stringify(history));
+  // localStorage.setItem(key, JSON.stringify(history));
 
-  return { status: true, message: 'Бюджет успешно сохранен (локально)' };
+  // return { status: true, message: 'Бюджет успешно сохранен (локально)' };
 
-  /* 
   // Real API implementation (commented out until backend is ready)
-  const res = await fetch(`${BASE}/dashboard/set-planned-budget`, {
+  const res = await fetch(`${BASE}/dashboard/set-food-expense`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'accept': 'application/json',
-      'Authorization': `Bearer ${COMMON_TOKEN}`
+      Authorization: `Bearer ${token || COMMON_TOKEN}`
     },
     body: JSON.stringify(payload)
   });
@@ -676,19 +678,29 @@ export async function setPlannedBudget(payload: {
   }
 
   return data;
-  */
+
 }
 
-export async function getPlannedBudgets() {
-  // MOCK IMPLEMENTATION using localStorage
-  await new Promise(resolve => setTimeout(resolve, 50));
+export async function getPlannedBudgets(
+  month?: number | string,
+  schoolId?: string | number,
+  regionId?: string | number
+) {
+  // Build query params (month is optional, school_id and region_id optional)
+  const params = new URLSearchParams();
+  if (month != null && String(month) !== '') {
+    params.append('month', String(month));
+  }
+  if (schoolId != null && String(schoolId) !== '') {
+    params.append('school_id', String(schoolId));
+  }
+  if (regionId != null && String(regionId) !== '') {
+    params.append('id_region', String(regionId));
+  }
 
-  const key = 'mock_budget_history';
-  return JSON.parse(localStorage.getItem(key) || '[]');
+  const url = `${BASE}/dashboard/get-food-expenses${params.toString() ? `?${params.toString()}` : ''}`;
 
-  /*
-  // Real API implementation (commented out until backend is ready)
-  const res = await fetch(`${BASE}/dashboard/planned-budgets`, {
+  const res = await fetch(url, {
     method: 'GET',
     headers: {
       'accept': 'application/json',
@@ -708,7 +720,6 @@ export async function getPlannedBudgets() {
   }
 
   return data;
-  */
 }
 
 export async function getParentData(token: string) {

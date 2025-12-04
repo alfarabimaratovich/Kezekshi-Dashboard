@@ -101,6 +101,15 @@ export function useProfile() {
     return existing
   }
 
+  // helper: build ISO-like month string "YYYY-MM-01" or return undefined
+  const buildMonthIso = (year?: string | number, month?: string | number) => {
+    if (!year || !month) return undefined
+    const y = String(year).trim()
+    const m = String(month).trim().padStart(2, '0')
+    if (!y || !m) return undefined
+    return `${y}-${m}-01`
+  }
+
   // Load existing budget data into form
   const loadExistingBudgetToForm = () => {
     const existing = findExistingBudget()
@@ -167,9 +176,25 @@ export function useProfile() {
   })
 
   // Methods
-  const loadBudgetHistory = async () => {
+  // monthParam may be either numeric month (1..12) or already formatted string "YYYY-MM-01"
+  const loadBudgetHistory = async (monthParam?: number | string, school_id?: number) => {
     try {
-      const history = await getPlannedBudgets()
+      let monthArg: string | undefined
+      if (monthParam != null && String(monthParam).trim() !== '') {
+        // if numeric month passed (1..12) -> use current budgetForm.year for year
+        const num = Number(monthParam)
+        if (!isNaN(num) && num >= 1 && num <= 12) {
+          monthArg = buildMonthIso(budgetForm.value.year, num)
+        } else {
+          // assume already a proper string (e.g. "2025-12-01")
+          monthArg = String(monthParam)
+        }
+      } else {
+        // fallback to current selection in form
+        monthArg = buildMonthIso(budgetForm.value.year, budgetForm.value.month)
+      }
+
+      const history = await getPlannedBudgets(monthArg, school_id)
       budgetHistory.value = history
     } catch (e) {
       console.error('Failed to load budget history', e)
@@ -242,21 +267,20 @@ export function useProfile() {
         if (index !== -1) {
           budgetHistory.value[index] = {
             ...budgetHistory.value[index],
-            amount: calculatedAmount,
-            price: Number(budgetForm.value.price),
-            school_name: schoolName
+            plan_students_count: Number(budgetForm.value.studentCount),
+            sum_per_student: Number(budgetForm.value.price),
           }
         }
       }
 
+      // send month as "YYYY-MM-01"
+      const monthIso = buildMonthIso(budgetForm.value.year, budgetForm.value.month)
       const payload: any = {
-        year: Number(budgetForm.value.year),
-        month: Number(budgetForm.value.month),
-        amount: calculatedAmount,
-        price: Number(budgetForm.value.price),
-        region_id: budgetForm.value.regionId ? Number(budgetForm.value.regionId) : undefined,
+        month: monthIso,
+        plan_students_count: Number(budgetForm.value.studentCount),
+        fact_students_count: Number(budgetForm.value.studentCount),
+        sum_per_student: Number(budgetForm.value.price),
         school_id: budgetForm.value.schoolId ? Number(budgetForm.value.schoolId) : undefined,
-        school_name: schoolName
       }
 
       // Add ID if updating existing budget
@@ -265,7 +289,7 @@ export function useProfile() {
       }
 
       console.log('Saving budget with payload:', payload) // Debug log
-      await setPlannedBudget(payload)
+      await setPlannedBudget(payload, token.value)
 
       const message = existingBudget
         ? 'Бюджет успешно обновлен'
@@ -276,7 +300,8 @@ export function useProfile() {
       budgetForm.value.price = '' // Reset price
       existingBudgetId.value = null // Reset tracking ID
       hasLoadedExistingBudget.value = false // Reset loaded flag
-      await loadBudgetHistory() // Refresh history
+      // Refresh history for the same month/school we just saved
+      await loadBudgetHistory(monthIso, budgetForm.value.schoolId ? Number(budgetForm.value.schoolId) : undefined)
     } catch (e: any) {
       console.error('Budget save error:', e) // Debug log
       notify('Ошибка', e.detail || 'Не удалось сохранить бюджет', 'error')
@@ -389,6 +414,7 @@ export function useProfile() {
           }
         }
 
+        // load history for current selection (will format month as YYYY-MM-01)
         await loadBudgetHistory()
 
         // Load existing budget if school is already selected
