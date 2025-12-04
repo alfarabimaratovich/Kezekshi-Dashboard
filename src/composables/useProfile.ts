@@ -194,7 +194,7 @@ export function useProfile() {
         monthArg = buildMonthIso(budgetForm.value.year, budgetForm.value.month)
       }
 
-      const history = await getPlannedBudgets(monthArg, school_id)
+      const history = await getPlannedBudgets(monthArg, school_id, undefined, token.value)
       budgetHistory.value = history
     } catch (e) {
       console.error('Failed to load budget history', e)
@@ -278,7 +278,6 @@ export function useProfile() {
       const payload: any = {
         month: monthIso,
         plan_students_count: Number(budgetForm.value.studentCount),
-        fact_students_count: Number(budgetForm.value.studentCount),
         sum_per_student: Number(budgetForm.value.price),
         school_id: budgetForm.value.schoolId ? Number(budgetForm.value.schoolId) : undefined,
       }

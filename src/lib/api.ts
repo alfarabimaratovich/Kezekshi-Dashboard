@@ -684,7 +684,8 @@ export async function setPlannedBudget(payload: {
 export async function getPlannedBudgets(
   month?: number | string,
   schoolId?: string | number,
-  regionId?: string | number
+  regionId?: string | number,
+  token?: string
 ) {
   // Build query params (month is optional, school_id and region_id optional)
   const params = new URLSearchParams();
@@ -704,7 +705,7 @@ export async function getPlannedBudgets(
     method: 'GET',
     headers: {
       'accept': 'application/json',
-      'Authorization': `Bearer ${COMMON_TOKEN}`
+      'Authorization': `Bearer ${token || COMMON_TOKEN}`
     }
   });
 
