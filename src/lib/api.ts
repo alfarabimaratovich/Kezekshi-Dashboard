@@ -1,4 +1,5 @@
 // Kezekshi API client
+import { useAuth } from '../stores/useAuth';
 import { clearOtp, verifyOtp as clientVerifyOtp, generateOtp, getRemainingTTL } from './otp';
 import { normalizePhone } from './phone';
 
@@ -469,11 +470,11 @@ export async function getLibraryStats(
 }
 
 export async function getSummaryStats(
+  token: string,
   startDate: string,
   endDate: string,
   regionId?: string | number,
   schoolId?: string | number,
-  token?: string
 ) {
   const params = new URLSearchParams();
   params.append('start_date', startDate);
@@ -514,100 +515,106 @@ export async function getMonthlySavings(
   regionId?: string | number,
   schoolId?: string | number
 ) {
-  // MOCK IMPLEMENTATION
-  await new Promise(resolve => setTimeout(resolve, 50));
+  // Real implementation: query /dashboard/get-food-expenses per month (month param = "YYYY-MM-01")
+  const auth = useAuth();
+  const token = auth.authToken.value || COMMON_TOKEN;
 
-  const key = 'mock_budget_history';
-  const history = JSON.parse(localStorage.getItem(key) || '[]');
+  const months = Array.from({ length: 12 }, (_, i) => i + 1) // 1..12
 
-  // Filter by year, region, and school
-  const yearHistory = history.filter((h: any) => {
-    const yearMatch = String(h.year) === String(year);
-
-    let regionMatch = true;
-    if (regionId && String(regionId) !== 'all') {
-      regionMatch = String(h.region_id) === String(regionId);
-    }
-
-    let schoolMatch = true;
-    if (schoolId && String(schoolId) !== 'all') {
-      schoolMatch = String(h.school_id) === String(schoolId);
-    }
-
-    return yearMatch && regionMatch && schoolMatch;
-  });
-
-  // Refined logic: Get unique months with latest plan
-  const uniqueMonths = new Map<number, any>();
-  yearHistory.forEach((h: any) => {
-    if (!uniqueMonths.has(h.month)) {
-      uniqueMonths.set(h.month, h);
-    }
-    // Since we unshift in setPlannedBudget, the first one we see is the latest.
-    // So we don't update if it exists.
-  });
-
-  const result = [];
-  for (const [month, plan] of uniqueMonths.entries()) {
-    let actual = 0;
+  const promises = months.map(async (m) => {
+    const monthIso = `${year}-${String(m).padStart(2, '0')}-01`;
     try {
-      const lastDay = new Date(Number(year), month, 0).getDate();
-      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-      const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+      // get planned budgets for this month (may return [] or array of plans)
+      const plans = await getPlannedBudgets(monthIso, schoolId, regionId, token);
 
-      const stats = await getSummaryStats(startDate, endDate, regionId, schoolId);
-      if (stats) {
-        // Calculate actual expense based on the PLANNED PRICE and ACTUAL MEAL COUNT
-        // This ensures the savings are calculated correctly according to the user's input
-        const mealsCount = stats.students_with_meals_total || 0;
-        actual = mealsCount * Number(plan.price);
+      // If API returned an array (multiple schools/plans) — aggregate them
+      if (Array.isArray(plans)) {
+        if (plans.length === 0) {
+          return { month: m, saved_expense: 0, actual_expense: 0 };
+        }
+
+        // If array items already contain saved_expense/actual_expense — sum them directly
+        const directHasValues = plans.every(p => p && (p.saved_expense != null || p.actual_expense != null));
+        if (directHasValues) {
+          const totalSaved = plans.reduce((acc, p) => acc + Number(p.saved_expense ?? 0), 0);
+          const totalActual = plans.reduce((acc, p) => acc + Number(p.actual_expense ?? 0), 0);
+          return { month: m, saved_expense: totalSaved, actual_expense: totalActual };
+        }
+
+        // Otherwise derive planned amount & price per plan and aggregate
+        let plannedTotal = 0;
+        let weightedPriceSum = 0;
+        let studentsWeight = 0;
+
+        for (const p of plans) {
+          const price_i = Number(p.sum_per_student ?? p.price ?? p.unit_price ?? p.price_per_student ?? 0) || 0;
+          let plannedAmount_i = Number(p.amount ?? p.plan_amount ?? p.planned_amount ?? 0);
+          const students_i = Number(p.plan_students_count ?? p.students_count ?? 0) || 0;
+          if (!plannedAmount_i && students_i && price_i) plannedAmount_i = students_i * price_i;
+
+          plannedTotal += Number(plannedAmount_i || 0);
+          weightedPriceSum += price_i * (students_i || 1);
+          studentsWeight += (students_i || 1);
+        }
+
+        // fetch aggregated summary stats for period and compute actual using weighted avg price
+        let actual = 0;
+        try {
+          const lastDay = new Date(Number(year), m, 0).getDate();
+          const startDate = `${year}-${String(m).padStart(2, '0')}-01`;
+          const endDate = `${year}-${String(m).padStart(2, '0')}-${lastDay}`;
+          const stats = await getSummaryStats(token, startDate, endDate, regionId, schoolId);
+          const mealsCount = Number(stats?.students_with_meals_total ?? stats?.meals_total ?? 0) || 0;
+          const avgPrice = studentsWeight ? (weightedPriceSum / studentsWeight) : (plans[0] ? Number(plans[0].price ?? plans[0].sum_per_student ?? 0) : 0);
+          actual = mealsCount * (Number(avgPrice) || 0);
+        } catch (e) {
+          console.warn(`Failed to fetch summary stats for ${monthIso}`, e);
+        }
+
+        return {
+          month: m,
+          saved_expense: Number(plannedTotal) - Number(actual),
+          actual_expense: Number(actual)
+        };
       }
+
+      // single plan object handling (backward compatible)
+      const plan = plans;
+      if (!plan) {
+        return { month: m, saved_expense: 0, actual_expense: 0 };
+      }
+
+      const price = Number(plan.sum_per_student ?? plan.price ?? plan.unit_price ?? plan.sum ?? 0) || 0;
+      let plannedAmount = Number(plan.amount ?? plan.plan_amount ?? plan.planned_amount ?? 0);
+      if (!plannedAmount && (plan.plan_students_count ?? plan.students_count) && price) {
+        plannedAmount = Number(plan.plan_students_count ?? plan.students_count) * price;
+      }
+
+      let actual = 0;
+      try {
+        const lastDay = new Date(Number(year), m, 0).getDate();
+        const startDate = `${year}-${String(m).padStart(2, '0')}-01`;
+        const endDate = `${year}-${String(m).padStart(2, '0')}-${lastDay}`;
+        const stats = await getSummaryStats(token, startDate, endDate, regionId, schoolId);
+        const mealsCount = Number(stats?.students_with_meals_total ?? stats?.meals_total ?? 0) || 0;
+        actual = mealsCount * price;
+      } catch (e) {
+        console.warn(`Failed to fetch summary stats for ${monthIso}`, e);
+      }
+
+      return {
+        month: m,
+        saved_expense: Number(plannedAmount) - Number(actual),
+        actual_expense: Number(actual)
+      };
     } catch (e) {
-      console.warn(`Failed to fetch actual stats for ${year}-${month}`, e);
-    }
-
-    result.push({
-      month: month,
-      saved_expense: Number(plan.amount) - actual,
-      actual_expense: actual
-    });
-  }
-
-  return result;
-
-  /*
-  const params = new URLSearchParams();
-  params.append('year', String(year));
-  
-  if (regionId && String(regionId) !== 'all') {
-    params.append('id_region', String(regionId));
-  }
-  if (schoolId && String(schoolId) !== 'all') {
-    params.append('school_id', String(schoolId));
-  }
-
-  const res = await fetch(`${BASE}/dashboard/monthly-savings?${params.toString()}`, {
-    method: 'GET',
-    headers: {
-      'accept': 'application/json',
-      'Authorization': `Bearer ${COMMON_TOKEN}`
+      console.warn(`Failed to fetch planned budgets for ${monthIso}`, e);
+      return { month: m, saved_expense: 0, actual_expense: 0 };
     }
   });
 
-  const text = await res.text();
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch (e) {
-    throw { status: res.status, message: 'Invalid JSON response', raw: text };
-  }
-
-  if (!res.ok) {
-    throw { status: res.status, ...data };
-  }
-
-  return data;
-  */
+  const results = await Promise.all(promises);
+  return results;
 }
 
 export async function changeUserData(token: string, payload: {
@@ -692,10 +699,10 @@ export async function getPlannedBudgets(
   if (month != null && String(month) !== '') {
     params.append('month', String(month));
   }
-  if (schoolId != null && String(schoolId) !== '' && schoolId !== 0) {
+  if (schoolId != null && String(schoolId) !== '' && schoolId !== 0 && String(schoolId) !== 'all' && String(schoolId) !== 'NaN') {
     params.append('school_id', String(schoolId));
   }
-  if (regionId != null && String(regionId) !== '') {
+  if (regionId != null && String(regionId) !== '' && String(regionId) !== 'all' && String(regionId) !== 'NaN') {
     params.append('id_region', String(regionId));
   }
 

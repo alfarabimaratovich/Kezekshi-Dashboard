@@ -35,6 +35,24 @@ const years = [String(currentYear - 2), String(currentYear - 1), String(currentY
 const selectedYear = ref(String(currentYear))
 const apiData = ref<any[]>([])
 
+const getMonthNumber = (month: number | string) => {
+  let mNum: number | null = null
+
+  if (typeof month === 'number') {
+    mNum = month
+  } else if (typeof month === 'string') {
+    // поддерживаем форматы "2025-12-01", "2025-12" и простые строковые числа "12"
+    const isoMatch = month.match(/^(\d{4})-(\d{2})(?:-\d{2})?$/)
+    if (isoMatch) {
+      mNum = Number(isoMatch[2])
+    } else {
+      const n = Number(month)
+      if (!isNaN(n)) mNum = n
+    }
+  }
+  return mNum
+}
+
 const fetchData = async () => {
   try {
     const data = await getMonthlySavings(selectedYear.value, props.regionId, props.schoolId)
@@ -64,7 +82,7 @@ const chartData = computed(() => {
 
   // Fill with API data (item.month expected 1..12)
   apiData.value.forEach(item => {
-    const m = Number(item.month)
+    const m = getMonthNumber(item.month)
     if (m >= 1 && m <= 12) {
       const savings = Math.max(0, Number(item.saved_expense) || 0)
       const expenses = Math.max(0, Number(item.actual_expense) || 0)

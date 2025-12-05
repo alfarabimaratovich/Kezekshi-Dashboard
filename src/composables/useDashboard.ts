@@ -97,8 +97,8 @@ export function useDashboard() {
         dinnerData,
         libraryData
       ] = await Promise.all([
-        getSummaryStats(startDate, endDate, selectedRegion.value, selectedSchool.value, token),
-        getSummaryStats(startOfMonth, endOfMonth, selectedRegion.value || '', selectedSchool.value || '', token),
+        getSummaryStats(token, startDate, endDate, selectedRegion.value, selectedSchool.value),
+        getSummaryStats(token, startOfMonth, endOfMonth, selectedRegion.value || '', selectedSchool.value || ''),
         getPassageStats(startDate, endDate, selectedRegion.value, selectedSchool.value, token),
         getDinnerStats(startDate, endDate, selectedRegion.value, selectedSchool.value, token),
         getLibraryStats(startDate, endDate, selectedRegion.value, selectedSchool.value, token)
