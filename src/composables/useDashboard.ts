@@ -1,5 +1,4 @@
-import { getDinnerStats, getLibraryStats, getLocalPlannedBudget, getPassageStats, getRegions, getSchools, getSummaryStats } from '@/lib/api'
-import { getWorkingDaysInMonth } from '@/lib/utils'
+import { getDinnerStats, getLibraryStats, getPassageStats, getPlannedBudgets, getRegions, getSchools, getSummaryStats } from '@/lib/api'
 import { useSecurityStore } from '@/stores/securityStore'
 import { useAuth } from '@/stores/useAuth'
 import { getLocalTimeZone, today } from '@internationalized/date'
@@ -36,34 +35,48 @@ export function useDashboard() {
     3: []  // Books
   })
 
-  const budgetData = ref({
-    saved: 0,
-    planned: 0,
-    spent: 0
-  })
+  const budgetData = ref([{
+    id: 0,
+    school_id: 0,
+    month: "",
+    plan_students_count: 0,
+    fact_students_count: 0,
+    sum_per_student: "",
+    author_id: 0,
+    plan_sum_all: "",
+    actual_expense: "",
+    saved_expense: "",
+  }])
 
-  const manualStudentCount = ref<string | number>('')
-  const manualMealPrice = ref<string | number>('')
+  const buildMonthIso = (year?: string | number, month?: string | number) => {
+    if (!year || !month) return undefined
+    const y = String(year).trim()
+    const m = String(month).trim().padStart(2, '0')
+    if (!y || !m) return undefined
+    return `${y}-${m}-01`
+  }
 
   // Methods
-  const applyBudget = () => {
-    const students = Number(manualStudentCount.value)
-    const price = Number(manualMealPrice.value)
+  const fetchBudgetData = async (month: number | string, year: string | number, school_id: number) => {
+    const token = auth.authToken.value || ''
 
-    if (!isNaN(students) && !isNaN(price)) {
-      // Calculate working days for the current month (based on dateRange or today)
-      const currentMonth = dateRange.value.start ? dateRange.value.start.month : today(getLocalTimeZone()).month
-      const currentYear = dateRange.value.start ? dateRange.value.start.year : today(getLocalTimeZone()).year
-      const workingDays = getWorkingDaysInMonth(currentYear, currentMonth)
-
-      budgetData.value.planned = students * price * workingDays
+    let monthArg: string | undefined
+    if (month != null && String(month).trim() !== '') {
+      // if numeric month passed (1..12) -> use current budgetForm.year for year
+      const num = Number(month)
+      if (!isNaN(num) && num >= 1 && num <= 12) {
+        monthArg = buildMonthIso(year, num)
+      } else {
+        // assume already a proper string (e.g. "2025-12-01")
+        monthArg = String(month)
+      }
+    } else {
+      // fallback to current selection in form
+      monthArg = buildMonthIso(year, month)
     }
 
-    if (!isNaN(price)) {
-      budgetData.value.spent = summaryData.value.mealsToday * price
-    }
-
-    budgetData.value.saved = budgetData.value.planned - budgetData.value.spent
+    budgetData.value = await getPlannedBudgets(monthArg, school_id, undefined, token)
+    console.log('Fetched budget data', budgetData.value[0].actual_expense)
   }
 
   const fetchSummaryData = async () => {
@@ -98,41 +111,8 @@ export function useDashboard() {
         summaryData.value.meals1to4 = summaryStats.students_with_meals_1_4 || 0
         summaryData.value.meals5to11 = summaryStats.students_with_meals_5_11 || 0
 
-        // Use monthly stats for budget data
-        if (monthlyStats) {
-          budgetData.value.planned = monthlyStats.planned_expense || 0
-          budgetData.value.spent = monthlyStats.actual_expense || 0
-        } else {
-          budgetData.value.planned = 0
-          budgetData.value.spent = 0
-        }
 
         // Override planned budget with local mock if available
-        const localBudget = getLocalPlannedBudget(now.year, now.month, selectedRegion.value, selectedSchool.value)
-        if (localBudget) {
-          budgetData.value.planned = Number(localBudget.amount)
-
-          // Also recalculate spent based on the planned price and actual meals
-          // This ensures consistency with the Savings Chart logic
-          if (monthlyStats) {
-            const mealsCount = monthlyStats.students_with_meals_total || 0
-            budgetData.value.spent = mealsCount * Number(localBudget.price)
-          }
-
-          budgetData.value.saved = budgetData.value.planned - budgetData.value.spent
-        }
-
-        if (manualStudentCount.value && manualMealPrice.value) {
-          const workingDays = getWorkingDaysInMonth(now.year, now.month)
-          budgetData.value.planned = Number(manualStudentCount.value) * Number(manualMealPrice.value) * workingDays
-        }
-
-        if (manualMealPrice.value && monthlyStats) {
-          // If manual price is set, recalculate spent based on monthly meals count
-          budgetData.value.spent = (monthlyStats.students_with_meals_total || 0) * Number(manualMealPrice.value)
-        }
-
-        budgetData.value.saved = budgetData.value.planned - budgetData.value.spent
       }
 
       // Calculate Visited Today (from passageData)
@@ -431,6 +411,11 @@ export function useDashboard() {
 
   watch([selectedRegion, selectedSchool, dateRange], () => {
     fetchSummaryData()
+    fetchBudgetData(
+      dateRange.value.start?.month || '',
+      dateRange.value.start?.year || '',
+      selectedSchool.value ? Number(selectedSchool.value) : 0
+    )
   }, { immediate: true })
 
   return {
@@ -442,8 +427,5 @@ export function useDashboard() {
     summaryData,
     chartsData,
     budgetData,
-    manualStudentCount,
-    manualMealPrice,
-    applyBudget
   }
 }

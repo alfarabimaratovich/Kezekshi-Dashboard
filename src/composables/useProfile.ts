@@ -31,7 +31,8 @@ export function useProfile() {
     year: new Date().getFullYear().toString(),
     month: (new Date().getMonth() + 1).toString(),
     studentCount: '',
-    price: ''
+    price: '',
+    planSumAll: ''
   })
   const isSavingBudget = ref(false)
   const availableSchoolsForBudget = ref<any[]>([])
@@ -236,7 +237,7 @@ export function useProfile() {
   }
 
   const handleSaveBudget = async () => {
-    if (!budgetForm.value.studentCount || !budgetForm.value.price || !budgetForm.value.year || !budgetForm.value.month) {
+    if (!budgetForm.value.studentCount || !budgetForm.value.price || !budgetForm.value.year || !budgetForm.value.month || !budgetForm.value.planSumAll) {
       notify('Ошибка', 'Заполните все обязательные поля', 'warning')
       return
     }
@@ -269,6 +270,7 @@ export function useProfile() {
             ...budgetHistory.value[index],
             plan_students_count: Number(budgetForm.value.studentCount),
             sum_per_student: Number(budgetForm.value.price),
+            plan_sum_all: Number(budgetForm.value.planSumAll),
           }
         }
       }
@@ -280,6 +282,7 @@ export function useProfile() {
         plan_students_count: Number(budgetForm.value.studentCount),
         sum_per_student: Number(budgetForm.value.price),
         school_id: budgetForm.value.schoolId ? Number(budgetForm.value.schoolId) : undefined,
+        plan_sum_all: Number(budgetForm.value.planSumAll),
       }
 
       // Add ID if updating existing budget

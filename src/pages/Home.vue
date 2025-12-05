@@ -23,9 +23,6 @@ const {
   summaryData,
   chartsData,
   budgetData,
-  manualStudentCount,
-  manualMealPrice,
-  applyBudget
 } = useDashboard()
 </script>
 
@@ -46,9 +43,6 @@ const {
 
       <BudgetCard 
         :budget-data="budgetData"
-        v-model:manual-student-count="manualStudentCount"
-        v-model:manual-meal-price="manualMealPrice"
-        @apply-budget="applyBudget"
       />
     </div>
 

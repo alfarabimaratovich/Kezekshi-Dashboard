@@ -13,6 +13,7 @@ interface BudgetForm {
   month: string
   studentCount: string
   price: string
+  planSumAll: string
 }
 
 const props = defineProps<{
@@ -151,6 +152,21 @@ const updateForm = (field: keyof BudgetForm, value: string) => {
               class="pl-9 w-full" 
               :model-value="budgetForm.price"
               @update:model-value="(v) => updateForm('price', String(v))"
+            />
+          </div>
+        </div>
+
+        <!-- Plan Sum All Input -->
+        <div class="space-y-2">
+          <Label>Планируемая сумма расхода (на всех учеников)</Label>
+          <div class="relative">
+            <CreditCard class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input 
+              type="number" 
+              placeholder="Введите сумму" 
+              class="pl-9 w-full" 
+              :model-value="budgetForm.planSumAll"
+              @update:model-value="(v) => updateForm('planSumAll', String(v))"
             />
           </div>
         </div>

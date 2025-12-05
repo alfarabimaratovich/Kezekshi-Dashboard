@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineAsyncComponent } from 'vue'
+import Button from '@/components/ui/button/Button.vue'
 import {
   Card,
   CardContent,
@@ -13,9 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import Button from '@/components/ui/button/Button.vue'
-import { PieChart, BarChart3 } from 'lucide-vue-next'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
+import { BarChart3, PieChart } from 'lucide-vue-next'
+import { defineAsyncComponent, ref } from 'vue'
 
 const AnalyticsChart = defineAsyncComponent({
   loader: () => import('@/components/AnalyticsChart.vue'),
@@ -67,7 +67,7 @@ const topics = ref<TopicState[]>([
   },
   {
     id: 3,
-    title: 'Посещение библиотеки',
+    title: 'Получение книг',
     chartType: 'pie',
     filter: 'all',
     options: [

@@ -692,7 +692,7 @@ export async function getPlannedBudgets(
   if (month != null && String(month) !== '') {
     params.append('month', String(month));
   }
-  if (schoolId != null && String(schoolId) !== '') {
+  if (schoolId != null && String(schoolId) !== '' && schoolId !== 0) {
     params.append('school_id', String(schoolId));
   }
   if (regionId != null && String(regionId) !== '') {

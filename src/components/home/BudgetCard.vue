@@ -4,19 +4,23 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { CreditCard, Wallet } from 'lucide-vue-next'
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { CreditCard, Wallet } from 'lucide-vue-next';
 
 defineProps<{
   budgetData: {
-    saved: number
-    planned: number
-    spent: number
-  }
-  manualStudentCount: string | number
-  manualMealPrice: string | number
+    id?: number
+    school_id?: number
+    month: number | string
+    plan_students_count: number | string
+    fact_students_count?: number | string
+    sum_per_student?: number | string
+    plan_sum_all?: number | string
+    actual_expense?: number | string
+    saved_expense?: number | string
+  }[]
 }>()
 
 const emit = defineEmits<{
@@ -25,8 +29,11 @@ const emit = defineEmits<{
   (e: 'applyBudget'): void
 }>()
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(value)
+const formatCurrency = (value: number | string | undefined) => {
+  if (value === undefined || value === null || value === '') return ''
+  const numberValue = typeof value === 'string' ? parseFloat(value) : value
+  if (isNaN(numberValue)) return ''
+  return new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(numberValue)
 }
 </script>
 
@@ -46,7 +53,7 @@ const formatCurrency = (value: number) => {
               type="number" 
               placeholder="Введите стоимость" 
               readonly
-              :model-value="manualMealPrice"
+              :model-value="budgetData[0].sum_per_student"
               @update:model-value="(v) => $emit('update:manualMealPrice', v)"
             />
           </div>
@@ -58,7 +65,7 @@ const formatCurrency = (value: number) => {
                 type="number" 
                 placeholder="Введите количество" 
                 readonly
-                :model-value="manualStudentCount"
+                :model-value="budgetData[0].plan_students_count"
                 @update:model-value="(v) => $emit('update:manualStudentCount', v)"
               />
             </div>
@@ -73,7 +80,7 @@ const formatCurrency = (value: number) => {
               </div>
               Сэкономлено
             </div>
-            <div class="text-2xl font-bold text-green-700 dark:text-green-400">{{ formatCurrency(budgetData.saved) }}</div>
+            <div class="text-2xl font-bold text-green-700 dark:text-green-400">{{ formatCurrency(budgetData[0].saved_expense) }}</div>
           </div>
           <div class="space-y-4">
             <div class="space-y-3">
@@ -84,10 +91,10 @@ const formatCurrency = (value: number) => {
                       </div>
                       Запланировано
                     </div>
-                    <span class="font-semibold">{{ formatCurrency(budgetData.planned) }}</span>
+                    <span class="font-semibold">{{ formatCurrency(budgetData[0].plan_sum_all) }}</span>
                 </div>
                 <div class="h-2.5 w-full bg-secondary rounded-full overflow-hidden">
-                    <div class="h-full bg-primary transition-all duration-500" :style="{ width: (budgetData.planned > 0 ? (budgetData.spent / budgetData.planned * 100) : 0) + '%' }"></div>
+                    <div class="h-full bg-primary transition-all duration-500" :style="{ width: (Number(budgetData[0].plan_sum_all) > 0 ? (Number(budgetData[0].actual_expense) / Number(budgetData[0].plan_sum_all) * 100) : 0) + '%' }"></div>
                 </div>
                 <div class="flex items-center justify-between text-sm">
                     <div class="flex items-center gap-2 text-muted-foreground">
@@ -96,7 +103,7 @@ const formatCurrency = (value: number) => {
                       </div>
                       Потрачено
                     </div>
-                    <span class="font-semibold">{{ formatCurrency(budgetData.spent) }}</span>
+                    <span class="font-semibold">{{ formatCurrency(budgetData[0].actual_expense) }}</span>
                 </div>
             </div>
           </div>

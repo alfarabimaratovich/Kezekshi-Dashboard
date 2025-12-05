@@ -125,7 +125,7 @@ const getSchoolNameById = (id: number, savedName?: string) => {
                     {{ getSchoolNameById(item.school_id, item.school_name) }}
                   </div>
                 </TableCell>
-                <TableCell>{{ formatCurrency(item.plan_students_count * item.sum_per_student) }}</TableCell>
+                <TableCell>{{ formatCurrency(item.plan_sum_all) }}</TableCell>
                 <TableCell>{{ formatCurrency(item.sum_per_student) }}</TableCell>
               </TableRow>
             </TableBody>
